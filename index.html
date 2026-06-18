@@ -1,0 +1,1935 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-title" content="Tourenplaner"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="theme-color" content="#0f172a"/>
+<title>Ultra Ride Planner</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#141c2e;
+  --surface:#1c2840;
+  --surface2:#223050;
+  --border:#2d3f5e;
+  --text:#e8eef7;
+  --text2:#a8bbd4;
+  --text3:#6b85a5;
+  --accent:#f59e0b;
+  --accent2:#4a9eff;
+  --green:#22c55e;
+  --red:#ef4444;
+  --orange:#f97316;
+}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);padding:0 0 env(safe-area-inset-bottom,40px);min-height:100dvh}
+h1{font-size:22px;font-weight:900;color:#fff;letter-spacing:-0.5px;line-height:1.1}
+.sub{font-size:12px;color:var(--text2);margin-top:4px;font-weight:500;letter-spacing:0.01em}
+
+/* Cards */
+.card{background:var(--surface);border-radius:16px;border:1px solid var(--border);padding:16px;margin-bottom:12px}
+.card-dark{background:var(--surface2);border-radius:12px;border:1px solid var(--border);padding:12px;margin-bottom:12px}
+.section-title{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.12em;margin-bottom:12px}
+
+/* Inputs */
+label{display:block;font-size:10px;color:var(--text3);margin-bottom:5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em}
+input[type=number],input[type=text]{
+  border:1px solid var(--border);border-radius:8px;padding:9px 12px;
+  font-size:15px;color:var(--text);background:var(--bg);
+  outline:none;-webkit-appearance:none;font-family:inherit;font-weight:500;
+}
+input[type=number]:focus,input[type=text]:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(245,158,11,.15)}
+input[type=number]{width:72px;text-align:center}
+input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
+input[type=date]{
+  border:1px solid var(--border);border-radius:8px;padding:9px 12px;
+  font-size:15px;color:var(--text);background:var(--bg);
+  outline:none;-webkit-appearance:none;font-family:inherit;font-weight:500;
+  color-scheme:dark;
+}
+input[type=date]:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(245,158,11,.15)}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;gap:7px;color:#fff;border:none;border-radius:10px;padding:11px 18px;font-size:14px;font-weight:700;cursor:pointer;-webkit-appearance:none;font-family:inherit;letter-spacing:0.01em;transition:opacity .15s,transform .1s}
+.btn:active{opacity:.85;transform:scale(.97)}
+.btn:disabled{opacity:.4}
+.btn-primary{background:var(--accent2)}
+.btn-success{background:#16a34a}
+.btn-sm{padding:7px 13px;font-size:12px;border-radius:8px}
+
+/* Stat pills */
+.stat-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
+.stat{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:12px;color:var(--text2);font-weight:600;white-space:nowrap}
+.stat span{color:var(--text);font-size:14px;font-weight:800;display:block;margin-bottom:1px}
+
+/* Rows / layout */
+.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.pill{background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.25);color:#93c5fd;border-radius:8px;padding:7px 12px;font-size:12px;font-weight:600}
+.err{color:#f87171;font-size:12px;margin-top:5px}
+.hint{font-size:10px;color:var(--text3);margin-top:3px;letter-spacing:0.02em}
+
+/* Chart */
+#chart-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:10px;background:var(--bg)}
+#chart-svg{display:block}
+
+/* Table */
+.tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{width:100%;border-collapse:collapse;font-size:12px;min-width:580px}
+th{background:var(--bg);color:var(--text3);padding:8px 8px;text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:.1em;white-space:nowrap;font-weight:700;border-bottom:1px solid var(--border)}
+td{padding:10px 8px;vertical-align:middle;border-bottom:1px solid rgba(51,65,85,.5)}
+tr:last-child td{border-bottom:none}
+tr.active td{background:rgba(245,158,11,.08)!important}
+td input[type=text]{border:none;background:transparent;font-size:13px;color:var(--text);width:100%;padding:0;font-family:inherit;font-weight:600}
+td input[type=text]:focus{outline:none;border-bottom:1px solid var(--accent)}
+td input[type=number]{width:62px;font-size:12px;border:1px solid var(--border);border-radius:6px;padding:4px 6px;background:var(--bg);color:var(--text);font-family:inherit;text-align:center;-webkit-appearance:none}
+td input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
+
+/* Legend */
+.legend{display:flex;flex-wrap:wrap;gap:8px;padding:8px 0 4px;font-size:11px;color:var(--text3)}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:middle}
+
+/* Header */
+.header-row{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+
+/* Divider */
+.divider{height:1px;background:var(--border);margin:12px 0}
+
+/* Overlay */
+#fertig-overlay,#project-overlay{background:rgba(0,0,0,.75);backdrop-filter:blur(8px)}
+#fertig-overlay>div,#project-overlay>div{background:var(--surface);border:1px solid var(--border)}
+
+/* Project list */
+.project-item{display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:10px;border:1px solid var(--border);margin-bottom:8px;cursor:pointer;transition:border-color .15s,background .15s}
+.project-item:hover,.project-item:active{border-color:var(--accent2);background:rgba(74,158,255,.07)}
+.project-item-name{flex:1;font-size:14px;font-weight:700;color:var(--text)}
+.project-item-meta{font-size:11px;color:var(--text3);margin-top:2px}
+.project-del{background:none;border:none;color:var(--text3);cursor:pointer;padding:4px 8px;border-radius:6px;font-size:14px;flex-shrink:0}
+.project-del:hover{color:#f87171;background:rgba(239,68,68,.1)}
+
+/* Scrollbar */
+::-webkit-scrollbar{height:3px;width:3px;background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+</style>
+</head>
+<body>
+<div style="max-width:900px;margin:0 auto;padding:16px 14px">
+
+<div class="header-row">
+  <div>
+    <div style="font-size:10px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.15em;margin-bottom:6px">🚴 Ultra Ride Planner</div>
+    <h1 id="route-name">Variante Berlin 2</h1>
+    <div class="sub" id="route-sub">654 km · wird berechnet…</div>
+    <button onclick="if(confirm('Gespeicherten Stand löschen?')){clearState();location.reload();}" style="margin-top:6px;background:none;border:none;font-size:10px;color:var(--text3);cursor:pointer;padding:0;font-family:inherit">↺ Neu starten</button>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end">
+    <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
+      <button class="btn btn-primary" id="gpx-btn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        GPX Import
+      </button>
+      <button class="btn" style="background:var(--surface2);border:1px solid var(--border)" onclick="openProjects()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+        Projekte
+      </button>
+      <button class="btn btn-success" id="fertig-btn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        Fertig
+      </button>
+    </div>
+    <input type="file" id="gpx-file" accept=".gpx" style="display:none"/>
+    <div class="err" id="gpx-err" style="display:none"></div>
+    <div class="hint">Stopps alle 60 km automatisch</div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="section-title">Parameter</div>
+  <div class="row" style="gap:16px;align-items:flex-end;flex-wrap:wrap">
+    <div>
+      <label>Startdatum</label>
+      <div class="row" style="gap:8px">
+        <input type="date" id="start-date" value="2026-04-10"/>
+        <span id="start-weekday" style="font-size:13px;font-weight:800;color:var(--accent);white-space:nowrap"></span>
+      </div>
+    </div>
+    <div>
+      <label>Startzeit</label>
+      <div class="row" style="gap:5px">
+        <input type="number" id="start-h" value="2" min="0" max="23" style="width:58px"/>
+        <span style="color:var(--text3);font-weight:800;font-size:16px">:</span>
+        <input type="number" id="start-m" value="0" min="0" max="59" step="5" style="width:58px"/>
+      </div>
+    </div>
+    <div>
+      <label>Ø km/h</label>
+      <input type="number" id="speed" value="20" min="5" max="60" step="0.5" style="width:76px"/>
+    </div>
+    <div>
+      <label>Pause alle km</label>
+      <div class="row" style="gap:6px">
+        <input type="number" id="pause-interval" value="60" min="10" max="200" step="5" style="width:66px"/>
+        <button onclick="applyPauseInterval()" class="btn btn-primary btn-sm">Setzen</button>
+      </div>
+    </div>
+  </div>
+  <div style="margin-top:14px">
+    <div class="pill" id="summary" style="display:inline-block">Fahrzeit: – h · Pausen: – min</div>
+  </div>
+</div>
+
+<div class="card" style="padding:14px 14px 10px">
+  <div class="section-title">Höhenprofil</div>
+  <div id="chart-wrap"><svg id="chart-svg"></svg></div>
+  <div style="font-size:10px;color:var(--text3);text-align:center;margin-top:8px;letter-spacing:0.03em">Tippe auf die Kurve → Zeile markieren</div>
+</div>
+
+<!-- Wetter & Nacht -->
+<div class="card" id="weather-card">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+    <div class="section-title" style="margin-bottom:0">Wetter & Nacht</div>
+    <button onclick="loadWeather()" id="weather-btn" class="btn btn-sm" style="background:#0ea5e9">☁️ Laden</button>
+  </div>
+  <div id="weather-body" style="font-size:12px;color:var(--text3)">GPX importieren, dann Laden antippen</div>
+</div>
+
+<!-- Versorgung -->
+<div id="poi-card" class="card">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+    <div class="section-title" style="margin-bottom:0">Versorgung entlang der Route</div>
+    <button onclick="loadPois()" id="poi-btn" class="btn btn-sm" style="background:#0ea5e9">🔍 Laden</button>
+  </div>
+  <div id="poi-body" style="font-size:12px;color:var(--text3)">GPX importieren, dann Laden antippen</div>
+</div>
+
+<!-- Kompakte Warnzeile entfernt - Nacht wird in der Kurve angezeigt -->
+
+<div class="card" style="padding:0;overflow:hidden">
+  <div class="tbl-wrap">
+    <table id="main-table">
+      <thead>
+        <tr>
+          <th></th><th>#</th><th style="width:24px"></th><th>Region / Ort</th><th>km</th><th>↑</th><th>Ankunft</th><th>Pause</th><th>Abfahrt</th><th>Hinweis</th>
+        </tr>
+      </thead>
+      <tbody id="tbl-body"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Pause hinzufügen -->
+<div class="card" style="display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap">
+  <div>
+    <label>Bei km</label>
+    <input type="number" id="add-km" value="30" min="1" step="1" style="width:76px"/>
+  </div>
+  <div>
+    <label>Pause (Min)</label>
+    <input type="number" id="add-pause" value="25" min="5" max="240" step="5" style="width:76px"/>
+  </div>
+  <div>
+    <label>Region / Ort</label>
+    <input type="text" id="add-region" value="" placeholder="optional" style="width:160px"/>
+  </div>
+  <button onclick="addPause()" class="btn btn-primary">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    Pause hinzufügen
+  </button>
+  <div id="add-err" class="err" style="display:none;align-self:center"></div>
+</div>
+
+<div class="legend">
+  <span><span class="dot" style="background:#38bdf8"></span>☀️ Tag</span>
+  <span><span class="dot" style="background:#475569"></span>🌙 Nacht</span>
+  <span><span class="dot" style="background:var(--green)"></span>Versorgung ok</span>
+  <span><span class="dot" style="background:var(--accent)"></span>Versorgung knapp</span>
+  <span><span class="dot" style="background:var(--red)"></span>Versorgung kritisch</span>
+  <span><span class="dot" style="background:#94a3b8"></span>Nacht (Ampel)</span>
+</div>
+
+<!-- Project Manager Overlay -->
+<div id="project-overlay" style="display:none;position:fixed;inset:0;z-index:200;align-items:center;justify-content:center;padding:20px">
+  <div style="border-radius:20px;padding:24px;max-width:480px;width:100%;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 30px 80px rgba(0,0,0,.6)">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <h2 style="font-size:18px;font-weight:900;color:#fff;letter-spacing:-0.3px">📁 Projekte</h2>
+      <button onclick="closeProjects()" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:6px 12px;color:var(--text2);cursor:pointer;font-size:13px;font-family:inherit">✕ Schließen</button>
+    </div>
+
+    <!-- Save current -->
+    <div style="background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:16px">
+      <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px">Aktuelles Projekt speichern</div>
+      <div style="display:flex;gap:8px">
+        <input type="text" id="project-name-input" placeholder="Projektname…" style="flex:1;font-size:14px"/>
+        <button onclick="saveProject()" class="btn btn-primary btn-sm">💾 Speichern</button>
+      </div>
+      <div id="project-save-msg" style="font-size:11px;margin-top:6px;display:none"></div>
+    </div>
+
+    <!-- Project list -->
+    <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px">Gespeicherte Projekte</div>
+    <div id="project-list" style="overflow-y:auto;flex:1;padding-right:2px"></div>
+  </div>
+</div>
+
+<!-- Fertig Overlay -->
+<div id="fertig-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(10px);z-index:100;align-items:center;justify-content:center;padding:20px">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:28px 24px;max-width:440px;width:100%;box-shadow:0 30px 80px rgba(0,0,0,.6)">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+      <div style="background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.3);border-radius:50%;width:42px;height:42px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <h2 style="font-size:18px;font-weight:900;color:#fff;letter-spacing:-0.3px" id="fertig-title">Tour geplant!</h2>
+    </div>
+    <div id="fertig-summary" style="background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:20px;font-size:13px;line-height:1.9;color:var(--text2)"></div>
+    <div style="margin-bottom:16px">
+      <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">GPX Export für Komoot</div>
+      <p style="font-size:12px;color:var(--text3);margin-bottom:12px">Pausenpunkte als <b style="color:var(--text2)">POI-Wegpunkte</b> — erscheinen als Pins auf der Komoot-Karte.</p>
+      <button onclick="exportGpx()" class="btn btn-success" style="width:100%;justify-content:center;font-size:15px;padding:13px">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        GPX herunterladen
+      </button>
+      <div id="export-note" style="font-size:11px;color:var(--text3);margin-top:6px;text-align:center"></div>
+    </div>
+    <button onclick="toggleFertig()" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px;font-size:14px;font-weight:600;color:var(--text2);cursor:pointer;font-family:inherit">
+      ✏️ Weiterbearbeiten
+    </button>
+  </div>
+</div>
+
+</div>
+
+<script>
+// ── Elevation data ──────────────────────────────────────────────────────────
+const BERLIN_ELEV=[[0,509.0],[1,512.3],[2,510.6],[3,505.3],[4,500.9],[5,504.9],[6,500.3],[7,496.4],[8,488.0],[9,486.0],[10,480.8],[11,477.3],[12,476.9],[13,473.4],[14,472.0],[15,469.7],[16,467.2],[17,464.8],[18,463.8],[19,468.3],[20,464.6],[21,462.2],[22,457.9],[23,457.9],[24,454.8],[25,448.5],[26,448.7],[27,441.8],[28,439.3],[29,437.5],[30,434.3],[31,433.4],[32,432.3],[33,431.4],[34,428.2],[35,425.2],[36,423.6],[37,422.0],[38,420.3],[39,421.7],[40,418.3],[41,417.5],[42,414.7],[43,414.2],[44,427.7],[45,426.1],[46,412.3],[47,408.8],[48,405.5],[49,403.1],[50,402.9],[51,402.6],[52,400.2],[53,400.7],[54,401.3],[55,409.7],[56,415.7],[57,425.2],[58,433.3],[59,445.6],[60,454.3],[61,469.9],[62,482.7],[63,511.1],[64,535.9],[65,528.7],[66,518.8],[67,486.7],[68,468.4],[69,468.7],[70,490.2],[71,517.9],[72,502.8],[73,511.0],[74,554.2],[75,562.3],[76,562.3],[77,529.9],[78,525.2],[79,513.4],[80,464.7],[81,445.0],[82,449.3],[83,431.7],[84,438.5],[85,424.1],[86,421.6],[87,416.4],[88,418.5],[89,418.5],[90,417.3],[91,410.8],[92,410.2],[93,420.7],[94,438.9],[95,438.3],[96,432.5],[97,413.9],[98,409.1],[99,416.1],[100,418.9],[101,422.6],[102,394.3],[103,395.6],[104,389.1],[105,392.3],[106,388.4],[107,381.6],[108,378.7],[109,379.9],[110,374.3],[111,370.9],[112,366.3],[113,370.6],[114,363.3],[115,370.3],[116,369.5],[117,373.2],[118,359.6],[119,357.3],[120,346.1],[121,346.9],[122,346.5],[123,347.1],[124,348.5],[125,338.8],[126,347.7],[127,343.0],[128,342.5],[129,339.1],[130,340.0],[131,332.4],[132,325.6],[133,328.3],[134,332.9],[135,328.5],[136,323.3],[137,326.9],[138,325.7],[139,315.5],[140,325.7],[141,324.8],[142,331.9],[143,331.3],[144,332.6],[145,333.1],[146,327.6],[147,330.2],[148,317.8],[149,318.1],[150,318.9],[151,314.2],[152,307.6],[153,310.0],[154,314.9],[155,309.2],[156,304.9],[157,302.7],[158,300.2],[159,296.9],[160,305.8],[161,306.6],[162,310.5],[163,310.1],[164,304.1],[165,301.9],[166,302.5],[167,297.0],[168,302.4],[169,303.2],[170,303.5],[171,307.3],[172,313.1],[173,303.6],[174,290.9],[175,285.0],[176,296.6],[177,287.1],[178,292.8],[179,284.8],[180,285.7],[181,280.7],[182,271.7],[183,267.5],[184,265.9],[185,264.5],[186,263.3],[187,260.9],[188,261.6],[189,262.0],[190,259.9],[191,255.9],[192,256.8],[193,256.0],[194,256.5],[195,255.5],[196,254.4],[197,255.8],[198,252.1],[199,250.1],[200,251.3],[201,250.2],[202,250.1],[203,249.0],[204,248.6],[205,248.7],[206,248.0],[207,247.4],[208,245.9],[209,248.8],[210,248.8],[211,245.0],[212,246.5],[213,254.4],[214,250.0],[215,248.1],[216,251.5],[217,243.7],[218,244.6],[219,246.3],[220,249.1],[221,247.4],[222,244.7],[223,247.9],[224,244.3],[225,238.3],[226,239.1],[227,242.1],[228,244.5],[229,247.4],[230,244.2],[231,238.5],[232,240.1],[233,240.5],[234,249.7],[235,259.3],[236,250.3],[237,249.4],[238,248.4],[239,248.9],[240,250.4],[241,249.5],[242,251.3],[243,250.8],[244,252.4],[245,253.0],[246,256.2],[247,260.0],[248,269.1],[249,263.5],[250,262.2],[251,261.9],[252,277.1],[253,275.6],[254,270.3],[255,272.5],[256,268.2],[257,269.0],[258,270.9],[259,273.8],[260,276.2],[261,287.2],[262,280.5],[263,284.9],[264,290.0],[265,293.5],[266,293.3],[267,309.0],[268,296.9],[269,304.2],[270,318.6],[271,318.3],[272,316.5],[273,324.6],[274,331.1],[275,340.8],[276,350.9],[277,370.8],[278,364.3],[279,374.9],[280,385.9],[281,402.4],[282,405.2],[283,415.6],[284,451.1],[285,470.3],[286,465.9],[287,449.0],[288,447.1],[289,445.1],[290,443.3],[291,452.7],[292,453.4],[293,462.4],[294,472.1],[295,484.4],[296,504.7],[297,534.6],[298,565.0],[299,614.6],[300,640.8],[301,693.8],[302,746.2],[303,770.4],[304,816.4],[305,827.8],[306,779.1],[307,739.7],[308,719.7],[309,718.0],[310,757.2],[311,736.9],[312,763.6],[313,754.7],[314,757.0],[315,792.6],[316,789.3],[317,790.5],[318,740.6],[319,688.7],[320,657.0],[321,619.2],[322,587.7],[323,559.1],[324,527.2],[325,494.9],[326,478.8],[327,474.2],[328,462.9],[329,450.4],[330,422.0],[331,418.5],[332,407.9],[333,402.0],[334,399.2],[335,403.2],[336,402.0],[337,382.6],[338,379.2],[339,373.2],[340,367.9],[341,364.4],[342,362.4],[343,361.6],[344,353.5],[345,364.5],[346,372.5],[347,343.2],[348,336.5],[349,335.3],[350,329.4],[351,324.9],[352,327.3],[353,316.8],[354,313.8],[355,309.0],[356,304.5],[357,305.5],[358,302.5],[359,291.7],[360,290.9],[361,292.2],[362,287.6],[363,280.2],[364,281.8],[365,282.7],[366,288.4],[367,272.8],[368,271.8],[369,264.3],[370,261.6],[371,260.1],[372,259.8],[373,256.0],[374,248.3],[375,241.7],[376,238.7],[377,247.4],[378,230.8],[379,229.8],[380,266.3],[381,289.2],[382,289.7],[383,277.2],[384,276.1],[385,256.3],[386,252.9],[387,245.9],[388,236.7],[389,232.0],[390,219.2],[391,207.5],[392,191.8],[393,167.9],[394,160.9],[395,161.5],[396,146.8],[397,149.1],[398,143.2],[399,139.8],[400,137.3],[401,139.4],[402,136.1],[403,135.7],[404,138.9],[405,151.2],[406,126.7],[407,123.5],[408,120.2],[409,121.0],[410,145.6],[411,115.8],[412,119.7],[413,116.2],[414,115.2],[415,114.4],[416,113.4],[417,111.2],[418,108.5],[419,107.6],[420,107.0],[421,104.5],[422,103.2],[423,105.0],[424,103.5],[425,103.3],[426,125.4],[427,173.1],[428,180.7],[429,169.7],[430,152.3],[431,147.1],[432,166.2],[433,170.2],[434,191.7],[435,172.1],[436,156.8],[437,132.1],[438,124.9],[439,140.2],[440,136.7],[441,125.4],[442,109.0],[443,107.9],[444,105.2],[445,107.8],[446,100.5],[447,100.8],[448,101.9],[449,97.2],[450,100.3],[451,101.0],[452,103.7],[453,103.8],[454,102.7],[455,101.0],[456,94.9],[457,98.6],[458,91.6],[459,82.4],[460,82.5],[461,95.1],[462,99.2],[463,107.6],[464,111.2],[465,109.2],[466,103.0],[467,98.2],[468,97.4],[469,97.3],[470,93.4],[471,96.2],[472,98.0],[473,102.7],[474,106.2],[475,108.3],[476,111.3],[477,111.6],[478,108.7],[479,110.3],[480,109.0],[481,111.4],[482,103.3],[483,103.8],[484,100.0],[485,101.9],[486,98.7],[487,96.8],[488,94.9],[489,95.3],[490,94.0],[491,93.4],[492,93.1],[493,92.3],[494,86.7],[495,84.6],[496,92.3],[497,88.2],[498,87.4],[499,79.7],[500,80.0],[501,77.4],[502,75.9],[503,75.2],[504,76.4],[505,82.7],[506,84.3],[507,88.1],[508,90.9],[509,91.4],[510,91.6],[511,86.7],[512,88.6],[513,86.4],[514,89.4],[515,90.3],[516,87.7],[517,86.4],[518,91.4],[519,93.3],[520,91.1],[521,92.9],[522,94.4],[523,95.4],[524,97.9],[525,95.6],[526,88.0],[527,87.7],[528,88.2],[529,74.0],[530,67.8],[531,69.8],[532,68.6],[533,66.9],[534,65.6],[535,66.0],[536,65.9],[537,67.1],[538,65.7],[539,66.1],[540,67.3],[541,66.4],[542,69.0],[543,70.7],[544,69.0],[545,72.3],[546,76.0],[547,77.2],[548,80.3],[549,94.7],[550,95.5],[551,101.2],[552,103.6],[553,97.1],[554,91.6],[555,86.9],[556,94.5],[557,102.1],[558,104.6],[559,111.2],[560,111.9],[561,105.7],[562,100.8],[563,99.0],[564,97.7],[565,100.0],[566,96.0],[567,94.8],[568,93.4],[569,92.2],[570,91.0],[571,90.0],[572,89.9],[573,87.9],[574,81.5],[575,81.1],[576,82.5],[577,82.9],[578,86.6],[579,76.1],[580,72.7],[581,80.2],[582,81.4],[583,69.3],[584,65.3],[585,64.2],[586,61.6],[587,61.0],[588,59.6],[589,58.0],[590,54.8],[591,57.9],[592,52.8],[593,50.9],[594,49.4],[595,46.6],[596,43.8],[597,43.2],[598,42.6],[599,41.5],[600,40.8],[601,41.8],[602,42.8],[603,45.8],[604,39.8],[605,38.7],[606,39.5],[607,40.5],[608,38.2],[609,39.1],[610,42.5],[611,46.3],[612,48.3],[613,39.9],[614,39.0],[615,37.1],[616,41.1],[617,41.1],[618,42.1],[619,48.1],[620,45.2],[621,44.0],[622,45.8],[623,43.4],[624,36.3],[625,37.1],[626,43.2],[627,45.0],[628,47.3],[629,46.1],[630,46.3],[631,44.4],[632,47.0],[633,49.1],[634,46.7],[635,44.9],[636,53.2],[637,43.9],[638,43.0],[639,43.5],[640,42.4],[641,41.2],[642,41.1],[643,39.2],[644,40.2],[645,44.6],[646,36.0],[647,36.6],[648,37.1],[649,36.7],[650,36.7],[651,35.7],[652,36.9],[653,37.4],[654,37.3]];
+
+const BERLIN_STOPS=[
+  {km:0,  region:"Augsburg / Schwaben",      pause:0,  hinweis:"Start bei voller Verpflegung",                   type:"start"},
+  {km:60, region:"Donauwörth",               pause:25, hinweis:"Noch geschlossen – ggf. Tankstelle",             type:"short"},
+  {km:120,region:"Weißenburg / Gunzenhausen",pause:25, hinweis:"Läden offen, Frühstück möglich",                 type:"short"},
+  {km:180,region:"Neustadt/Aisch",           pause:25, hinweis:"Mittagspause",                                   type:"short"},
+  {km:240,region:"Coburg",                   pause:25, hinweis:"Supermarkt offen",                               type:"short"},
+  {km:300,region:"Eisfeld (Südthüringen)",   pause:25, hinweis:"Letzter Einkauf vor der Nacht – gut bevorraten", type:"shop"},
+  {km:360,region:"Erfurt-Umland",            pause:25, hinweis:"Nur noch Tankstellen / 24h-Shops",               type:"short"},
+  {km:420,region:"Sömmerda / Buttstädt",     pause:25, hinweis:"Tankstelle, falls vorhanden",                    type:"short"},
+  {km:480,region:"Naumburg",                 pause:60, hinweis:"Lange Pause – Bäckereien öffnen bald",           type:"long"},
+  {km:540,region:"Leipzig-Umland",           pause:25, hinweis:"Supermärkte / Bäckereien offen",                 type:"short"},
+  {km:600,region:"Brandenburg / Belzig",     pause:25, hinweis:"Mittagspause",                                   type:"short"},
+  {km:654,region:"Berlin (Ziel)",            pause:0,  hinweis:"Ankunft",                                        type:"end"},
+];
+
+// ── State ────────────────────────────────────────────────────────────────────
+let elevGrid=[...BERLIN_ELEV];
+let stops=BERLIN_STOPS.map(s=>({...s}));
+let hovIdx=null;
+let rawTrackPts=null; // stored on GPX import for re-export
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+const COLOR={start:"#60a5fa",end:"#4ade80",long:"#f87171",shop:"#fb923c",short:"#94a3b8"};
+function addMin(d,m){return new Date(d.getTime()+m*60000);}
+function fmt(d){const D=["So","Mo","Di","Mi","Do","Fr","Sa"];return D[d.getDay()]+" "+String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");}
+function typeOf(s,i,computed){
+  if(i===0)return"start";if(i===stops.length-1)return"end";
+  if(s.pause>=60)return"long";
+  const h=computed&&computed[i]?computed[i].arrival.getHours():0;
+  if(s.pause>0&&h>=17&&h<=20)return"shop";
+  return s.type||"short";
+}
+function getStartDate(){
+  const d=document.getElementById("start-date").value||"2026-04-10";
+  const[y,m,day]=d.split("-").map(Number);
+  const sh=parseInt(document.getElementById("start-h").value)||0;
+  const sm=parseInt(document.getElementById("start-m").value)||0;
+  return new Date(y,m-1,day,sh,sm,0);
+}
+function updateWeekday(){
+  const DAYS=["Sonntag","Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag"];
+  const d=document.getElementById("start-date").value||"2026-04-10";
+  const[y,m,day]=d.split("-").map(Number);
+  const wd=new Date(y,m-1,day).getDay();
+  document.getElementById("start-weekday").textContent=DAYS[wd];
+}
+function applyPauseInterval(){
+  const interval=parseInt(document.getElementById("pause-interval").value)||60;
+  const totalKm=stops[stops.length-1].km;
+  const first=stops[0],last=stops[stops.length-1];
+  const newMid=[];
+  for(let km=interval;km<totalKm;km+=interval){
+    newMid.push({km,region:`km ${km}`,pause:25,hinweis:"Pause",type:"short"});
+  }
+  stops=[first,...newMid,last];
+  hovIdx=null;
+  renderAll();
+}
+function computeSchedule(){
+  const spd=Math.max(1,parseFloat(document.getElementById("speed").value)||20);
+  let clk=getStartDate();
+  return stops.map((s,i)=>{
+    const arr=new Date(clk);
+    const dep=addMin(arr,s.pause||0);
+    if(i<stops.length-1)clk=addMin(dep,((stops[i+1].km-s.km)/spd)*60);
+    return{...s,arrival:arr,departure:dep};
+  });
+}
+
+// ── SVG Chart ────────────────────────────────────────────────────────────────
+function drawChart(computed){
+  const wrap=document.getElementById("chart-wrap");
+  const W=Math.max(wrap.clientWidth,500);
+  const totalKm=stops[stops.length-1].km;
+  const maxE=Math.max(...elevGrid.map(([,e])=>e));
+  const chartMax=Math.ceil(maxE/100)*100+100;
+
+  const PAD={top:155,right:16,bottom:44,left:40};
+  const cW=W-PAD.left-PAD.right;
+  const cH=220;
+  const H=cH+PAD.top+PAD.bottom;
+  const BAR_Y=PAD.top+cH+6;  // ampel bar top y
+  const BAR_H=10;             // bar height
+  const KM_Y=PAD.top+cH+BAR_H+18; // km labels below bar
+
+  const xS=km=>(km/totalKm)*cW+PAD.left;
+  const yS=e=>PAD.top+cH-(e/chartMax)*cH;
+
+  // area path
+  let path="M"+xS(elevGrid[0][0])+","+yS(elevGrid[0][1]);
+  for(let i=1;i<elevGrid.length;i++)path+=" L"+xS(elevGrid[i][0])+","+yS(elevGrid[i][1]);
+  const areaPath=path+" L"+xS(elevGrid[elevGrid.length-1][0])+","+(PAD.top+cH)+" L"+xS(elevGrid[0][0])+","+(PAD.top+cH)+" Z";
+
+  let svg=`<svg id="chart-svg" width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg" style="display:block">
+<!-- grid lines -->`;
+
+  // y-grid
+  for(let e=0;e<=chartMax;e+=200){
+    const y=yS(e);
+    svg+=`<line x1="${PAD.left}" y1="${y}" x2="${PAD.left+cW}" y2="${y}" stroke="#1e293b" stroke-width="1"/>
+<text x="${PAD.left-4}" y="${y+4}" text-anchor="end" font-size="10" fill="#475569">${e}</text>`;
+  }
+
+  // ── Day/Night segmented curve ────────────────────────────────────────────
+  // For each elevation grid point, determine if it's night based on time at that km
+  const spd=Math.max(1,parseFloat(document.getElementById("speed").value)||20);
+  function timeAtKmChart(km){
+    let base=computed[0].arrival,baseKm=0;
+    for(const s of computed){if(s.km<=km){base=s.departure||s.arrival;baseKm=s.km;}else break;}
+    return new Date(base.getTime()+((km-baseKm)/spd)*3600000);
+  }
+
+  // Build segments: group consecutive points by day/night
+  const segments=[];
+  let curSeg=null;
+  for(let i=0;i<elevGrid.length;i++){
+    const[km,ele]=elevGrid[i];
+    const dark=isDark(timeAtKmChart(km));
+    if(!curSeg||curSeg.dark!==dark){
+      // start new segment, overlapping with last point of previous for continuity
+      if(curSeg)curSeg.pts.push([km,ele]);
+      curSeg={dark,pts:[[km,ele]]};
+      segments.push(curSeg);
+    } else {
+      curSeg.pts.push([km,ele]);
+    }
+  }
+
+  // Draw filled areas first
+  segments.forEach((seg,si)=>{
+    if(seg.pts.length<2)return;
+    const gradId=`grad_${si}`;
+    const dayLine="#38bdf8",nightLine="#475569";
+    const col=seg.dark?nightLine:dayLine;
+    const baseY=PAD.top+cH;
+    // gradient fill per segment
+    const fillStart=seg.dark?"rgba(15,30,60,0.85)":"rgba(56,189,248,0.30)";
+    const fillEnd=seg.dark?"rgba(15,30,60,0.15)":"rgba(56,189,248,0.03)";
+    svg+=`<defs><linearGradient id="${gradId}" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="${fillStart}"/>
+      <stop offset="100%" stop-color="${fillEnd}"/>
+    </linearGradient></defs>`;
+    let ap=`M${xS(seg.pts[0][0])},${baseY} L${xS(seg.pts[0][0])},${yS(seg.pts[0][1])}`;
+    for(let j=1;j<seg.pts.length;j++)ap+=` L${xS(seg.pts[j][0])},${yS(seg.pts[j][1])}`;
+    ap+=` L${xS(seg.pts[seg.pts.length-1][0])},${baseY} Z`;
+    svg+=`<path d="${ap}" fill="url(#${gradId})"/>`;
+  });
+
+  // Draw lines on top
+  segments.forEach(seg=>{
+    if(seg.pts.length<2)return;
+    const col=seg.dark?"#475569":"#38bdf8";
+    let lp=`M${xS(seg.pts[0][0])},${yS(seg.pts[0][1])}`;
+    for(let j=1;j<seg.pts.length;j++)lp+=` L${xS(seg.pts[j][0])},${yS(seg.pts[j][1])}`;
+    svg+=`<path d="${lp}" fill="none" stroke="${col}" stroke-width="2.5" stroke-linejoin="round"/>`;
+  });
+
+  // Sun/Moon icons in the fill area (vertically centered between curve midpoint and baseline)
+  segments.forEach(seg=>{
+    if(seg.pts.length<2)return;
+    const x1=xS(seg.pts[0][0]);
+    const x2=xS(seg.pts[seg.pts.length-1][0]);
+    const segW=x2-x1;
+    if(segW<30)return;
+    const midX=(x1+x2)/2;
+    // find average elevation in middle third of segment for icon placement
+    const mStart=Math.floor(seg.pts.length*0.35);
+    const mEnd=Math.floor(seg.pts.length*0.65);
+    const midPts=seg.pts.slice(mStart,mEnd+1);
+    const avgEle=midPts.reduce((s,[,e])=>s+e,0)/midPts.length;
+    const curveY=yS(avgEle);
+    const baseY=PAD.top+cH;
+    const iconY=curveY+(baseY-curveY)*0.52; // midpoint between curve and baseline
+    const icon=seg.dark?"🌙":"☀️";
+    const sz=Math.min(segW<60?13:16,18);
+    svg+=`<text x="${midX}" y="${iconY}" text-anchor="middle" dominant-baseline="middle" font-size="${sz}" opacity="0.55">${icon}</text>`;
+  });
+
+  // ── Ampel bar — chrome/elegant style ─────────────────────────────────────────
+  // Background track
+  svg+=`<rect x="${PAD.left}" y="${BAR_Y}" width="${cW}" height="${BAR_H}" rx="${BAR_H/2}" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.07)" stroke-width="0.5"/>`;
+
+  for(let i=0;i<computed.length-1;i++){
+    const s=computed[i],next=computed[i+1];
+    const dark=isDark(s.arrival);
+    const rs=resupplyStatus(s.arrival);
+    const stopW=getStopWarnings(s,i,computed);
+    let baseCol,glowCol;
+    if(dark&&rs&&!rs.open){baseCol="#ef4444";glowCol="rgba(239,68,68,0.4)";}
+    else if(dark){baseCol="#334155";glowCol="rgba(51,65,85,0.2)";}
+    else if(rs&&!rs.open){baseCol="#ef4444";glowCol="rgba(239,68,68,0.4)";}
+    else if(rs&&rs.show&&rs.open){baseCol="#f59e0b";glowCol="rgba(245,158,11,0.35)";}
+    else if(stopW.some(w=>w.level==="red")){baseCol="#ef4444";glowCol="rgba(239,68,68,0.4)";}
+    else if(stopW.some(w=>w.level==="orange")){baseCol="#f59e0b";glowCol="rgba(245,158,11,0.3)";}
+    else{baseCol="#22c55e";glowCol="rgba(34,197,94,0.3)";}
+
+    const x1=xS(s.km),x2=xS(next.km);
+    const segId=`bar_${i}`;
+    const isFirst=i===0,isLast=i===computed.length-2;
+    const rx=BAR_H/2;
+
+    // gradient for chrome sheen
+    svg+=`<defs>
+      <linearGradient id="${segId}" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="${baseCol}" stop-opacity="1"/>
+        <stop offset="40%" stop-color="${baseCol}" stop-opacity="0.9"/>
+        <stop offset="100%" stop-color="${baseCol}" stop-opacity="0.6"/>
+      </linearGradient>
+    </defs>`;
+    svg+=`<rect x="${x1}" y="${BAR_Y}" width="${x2-x1}" height="${BAR_H}" fill="url(#${segId})"/>`;
+    // inner highlight shine line
+    svg+=`<line x1="${x1}" y1="${BAR_Y+1.5}" x2="${x2}" y2="${BAR_Y+1.5}" stroke="rgba(255,255,255,0.25)" stroke-width="1"/>`;
+    // separator between segments
+    if(!isLast) svg+=`<line x1="${x2}" y1="${BAR_Y}" x2="${x2}" y2="${BAR_Y+BAR_H}" stroke="rgba(0,0,0,0.3)" stroke-width="0.75"/>`;
+  }
+  // rounded end caps overlay
+  svg+=`<rect x="${PAD.left}" y="${BAR_Y}" width="${cW}" height="${BAR_H}" rx="${BAR_H/2}" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>`;
+  // top specular highlight
+  svg+=`<rect x="${PAD.left+1}" y="${BAR_Y+0.5}" width="${cW-2}" height="${BAR_H/2-1}" rx="${BAR_H/2-1}" fill="rgba(255,255,255,0.06)"/>`;
+  computed.forEach((s,i)=>{
+    const col=COLOR[typeOf(s,i,computed)]||"#64748b";
+    const x=xS(s.km);
+    const dash=i===0||i===stops.length-1?"":"5,3";
+    const sw=hovIdx===i?3:(typeOf(s,i,computed)==="long"||typeOf(s,i,computed)==="shop"?2:1);
+    const lc=hovIdx===i?"#0f172a":col;
+    svg+=`<line x1="${x}" y1="${PAD.top}" x2="${x}" y2="${PAD.top+cH}" stroke="${lc}" stroke-width="${sw}" stroke-dasharray="${dash}"/>`;
+    // tick mark on bar
+    svg+=`<line x1="${x}" y1="${BAR_Y}" x2="${x}" y2="${BAR_Y+BAR_H}" stroke="rgba(255,255,255,0.6)" stroke-width="1.5"/>`;
+    const label=s.region.replace(/^(Raum|Region)\s+/,"");
+    const ty=PAD.top-8;
+    svg+=`<text transform="rotate(-90,${x},${ty})" x="${x}" y="${ty}" text-anchor="start" dominant-baseline="middle" font-size="10" font-weight="${hovIdx===i?700:500}" fill="${lc}">${label}</text>`;
+  });
+
+  // x-axis labels (km) below bar
+  computed.forEach(s=>{
+    const x=xS(s.km);
+    svg+=`<text x="${x}" y="${KM_Y}" text-anchor="middle" font-size="9" fill="#94a3b8">${s.km}</text>`;
+  });
+
+  // touch/mouse overlay
+  svg+=`<rect id="chart-overlay" x="${PAD.left}" y="${PAD.top}" width="${cW}" height="${cH}" fill="transparent" style="cursor:crosshair"/>`;
+  svg+="</svg>";
+
+  document.getElementById("chart-wrap").innerHTML=svg;
+
+  // attach touch/mouse
+  const overlay=document.getElementById("chart-overlay");
+  function handleTouch(e){
+    e.preventDefault();
+    const rect=overlay.getBoundingClientRect();
+    const cx=(e.touches?e.touches[0].clientX:e.clientX)-rect.left;
+    const km=(cx/cW)*totalKm;
+    let best=Infinity,near=0;
+    stops.forEach((s,i)=>{const d=Math.abs(s.km-km);if(d<best){best=d;near=i;}});
+    if(near!==hovIdx){hovIdx=near;renderAll();highlightMarker(near);}
+  }
+  overlay.addEventListener("touchstart",handleTouch,{passive:false});
+  overlay.addEventListener("touchmove",handleTouch,{passive:false});
+  overlay.addEventListener("mousemove",handleTouch);
+  overlay.addEventListener("mouseleave",()=>{if(hovIdx!==null){hovIdx=null;renderAll();}});
+}
+
+// ── Night & Resupply helpers ──────────────────────────────────────────────────
+function isNight(date){const h=date.getHours();return h>=22||h<6;}
+
+// Simplified sun times by latitude (good enough for Central Europe)
+function sunTimes(date,lat){
+  const doy=Math.floor((date-new Date(date.getFullYear(),0,0))/(1000*60*60*24));
+  const B=-23.45*Math.cos((360/365)*(doy+10)*Math.PI/180);
+  const cosH=-Math.tan(lat*Math.PI/180)*Math.tan(B*Math.PI/180);
+  const H=Math.acos(Math.max(-1,Math.min(1,cosH)))*180/Math.PI;
+  const sunrise=12-H/15,sunset=12+H/15;
+  return{sunrise,sunset};
+}
+
+function isDark(date,lat=50){
+  const{sunrise,sunset}=sunTimes(date,lat);
+  const h=date.getHours()+date.getMinutes()/60;
+  return h<sunrise||h>sunset;
+}
+
+// Resupply: nur relevante Hinweise anzeigen
+function resupplyStatus(date){
+  const day=date.getDay();
+  const h=date.getHours()+date.getMinutes()/60;
+  const nextDay=new Date(date); nextDay.setDate(nextDay.getDate()+1);
+  const nextIsSunday=nextDay.getDay()===0;
+
+  if(day===0)       return{open:false,show:true, icon:"🚫",label:"Sonntag"};
+  if(h>=20)         return{open:false,show:true, icon:"🔒",label:"Läden zu"};
+  if(h>=6&&h<7)     return{open:false,show:true, icon:"⏳",label:"Öffnet bald"};
+  if(h<6)           return{open:false,show:true, icon:"🌙",label:"Nacht"};
+  if(h>=17&&h<20){
+    const m=Math.round((20-h)*60);
+    if(nextIsSunday) return{open:true,show:true, icon:"⚠️",label:`${m} Min · So!`};
+    return{open:true,show:true, icon:"⏱",label:`${m} Min`};
+  }
+  if(nextIsSunday&&h>=14) return{open:true,show:true, icon:"📅",label:"Morgen So!"};
+  return{open:true,show:false,icon:"",label:""};
+}
+
+// ── Weather (Open-Meteo, no API key) ─────────────────────────────────────────
+let weatherData=null;
+
+async function loadWeather(){
+  if(!rawTrackPts||!rawTrackPts.length){
+    document.getElementById("weather-body").innerHTML='<span style="color:#94a3b8">GPX importieren um Wetterdaten zu laden</span>';
+    return;
+  }
+  const btn=document.getElementById("weather-btn");
+  btn.textContent="⏳ Lädt…";btn.disabled=true;
+
+  // use start point coords
+  const p=rawTrackPts[0];
+  const dateStr=document.getElementById("start-date").value||"2026-04-10";
+  const computed=computeSchedule();
+  const endDate=computed[computed.length-1].arrival;
+  const endStr=endDate.toISOString().split("T")[0];
+
+  try{
+    const url=`https://api.open-meteo.com/v1/forecast?latitude=${p.lat.toFixed(4)}&longitude=${p.lon.toFixed(4)}`+
+      `&hourly=temperature_2m,precipitation_probability,windspeed_10m,weathercode`+
+      `&start_date=${dateStr}&end_date=${endStr}&timezone=Europe%2FBerlin`;
+    const res=await fetch(url);
+    const data=await res.json();
+    weatherData=data;
+    renderWeather(computed);
+  }catch(e){
+    document.getElementById("weather-body").innerHTML='<span style="color:#dc2626">Wetter konnte nicht geladen werden – Internetverbindung prüfen</span>';
+  }finally{
+    btn.textContent="🔄 Aktualisieren";btn.disabled=false;
+  }
+}
+
+const WX_ICON={0:"☀️",1:"🌤",2:"⛅",3:"☁️",45:"🌫",48:"🌫",51:"🌦",53:"🌦",55:"🌧",
+  61:"🌧",63:"🌧",65:"🌧",71:"❄️",73:"❄️",75:"❄️",80:"🌦",81:"🌧",82:"⛈",
+  95:"⛈",96:"⛈",99:"⛈"};
+
+function getWxForTime(date){
+  if(!weatherData)return null;
+  const h=weatherData.hourly;
+  const iso=date.toISOString().slice(0,13); // "2026-04-10T05"
+  // Open-Meteo times are in local time — match by date+hour string
+  const localStr=date.getFullYear()+"-"+String(date.getMonth()+1).padStart(2,"0")+"-"+
+    String(date.getDate()).padStart(2,"0")+"T"+String(date.getHours()).padStart(2,"0");
+  const idx=h.time.findIndex(t=>t.startsWith(localStr));
+  if(idx<0)return null;
+  return{
+    temp:Math.round(h.temperature_2m[idx]),
+    precip:h.precipitation_probability[idx],
+    wind:Math.round(h.windspeed_10m[idx]),
+    code:h.weathercode[idx]
+  };
+}
+
+function renderWeather(computed){
+  const el=document.getElementById("weather-body");
+  if(!weatherData){el.innerHTML='<span style="color:#94a3b8">Noch nicht geladen</span>';return;}
+
+  let html='<div style="overflow-x:auto"><table style="width:100%;font-size:12px;border-collapse:collapse;min-width:400px">';
+  html+='<tr style="background:var(--bg)"><th style="padding:6px 8px;text-align:left;font-weight:700;color:var(--text3)">Stopp</th>'+
+    '<th style="padding:6px 8px;text-align:center">Zeit</th>'+
+    '<th style="padding:6px 8px;text-align:center">Wetter</th>'+
+    '<th style="padding:6px 8px;text-align:center">Temp</th>'+
+    '<th style="padding:6px 8px;text-align:center">Regen%</th>'+
+    '<th style="padding:6px 8px;text-align:center">Wind</th></tr>';
+
+  computed.forEach((s,i)=>{
+    const wx=getWxForTime(s.arrival);
+    const icon=wx?(WX_ICON[wx.code]||"🌡"):"—";
+    const dark=isDark(s.arrival);
+    const bg=dark?"rgba(71,85,105,0.2)":"transparent";
+    const tc=dark?"var(--text2)":"var(--text)";
+    html+=`<tr style="background:${bg};color:${tc}">
+      <td style="padding:6px 8px;font-weight:600">${s.region}${dark?" 🌙":""}</td>
+      <td style="padding:6px 8px;text-align:center;font-family:monospace">${fmt(s.arrival)}</td>
+      <td style="padding:6px 8px;text-align:center;font-size:16px">${icon}</td>
+      <td style="padding:6px 8px;text-align:center">${wx?wx.temp+"°":"—"}</td>
+      <td style="padding:6px 8px;text-align:center">${wx?wx.precip+"%":"—"}</td>
+      <td style="padding:6px 8px;text-align:center">${wx?wx.wind+" km/h":"—"}</td>
+    </tr>`;
+  });
+  html+="</table></div>";
+  html+='<div style="font-size:10px;color:#94a3b8;margin-top:6px">Quelle: Open-Meteo · Vorhersage max. 16 Tage · 🌙 = Nachtfahrt</div>';
+  el.innerHTML=html;
+}
+
+// ── Warnings (nur noch in Tabelle inline) ────────────────────────────────────
+function renderWarnings(computed){
+  // Warnungen werden inline in der Tabelle angezeigt, kein separater Block
+}
+
+function resupplyStatus(date){
+  const day=date.getDay();
+  const h=date.getHours()+date.getMinutes()/60;
+  const nextDay=new Date(date); nextDay.setDate(nextDay.getDate()+1);
+  const nextIsSunday=nextDay.getDay()===0;
+
+  if(day===0)       return{open:false,show:true, icon:"🚫",label:"Sonntag"};
+  if(h>=20)         return{open:false,show:true, icon:"🔒",label:"Läden zu"};
+  if(h>=6&&h<7)     return{open:false,show:true, icon:"⏳",label:"Öffnet bald"};
+  if(h<6)           return{open:false,show:true, icon:"🌙",label:"Nacht"};
+  if(h>=17&&h<20){
+    const m=Math.round((20-h)*60);
+    if(nextIsSunday) return{open:true,show:true, icon:"⚠️",label:`${m} Min · So!`};
+    return{open:true,show:true, icon:"⏱",label:`${m} Min`};
+  }
+  if(nextIsSunday&&h>=14) return{open:true,show:true, icon:"📅",label:"Morgen So!"};
+  return{open:true,show:false,icon:"",label:""};
+}
+
+function getStopWarnings(s,i,computed){
+  const warnings=[];
+  const isL=i===computed.length-1;
+  if(!isL){
+    const gap=computed[i+1].km-s.km;
+    if(gap>=100)warnings.push({icon:"⚠️",text:`${gap} km bis nächster Stopp`,level:"red"});
+    else if(gap>=75)warnings.push({icon:"⚡",text:`${gap} km bis nächster Stopp`,level:"orange"});
+    // show "last resupply before night" only when currently open (no badge shown) and next stop is dark
+    const rs=resupplyStatus(s.arrival);
+    const nextDark=isDark(computed[i+1].arrival);
+    const curDark=isDark(s.arrival);
+    if(rs.open&&!rs.show&&nextDark&&!curDark){
+      warnings.push({icon:"🌙",text:"Letzter Einkauf vor Nacht",level:"orange"});
+    }
+  }
+  return warnings;
+}
+
+// ── Overpass API – echte POIs entlang der Route ───────────────────────────────
+// ── Opening Hours Parser ──────────────────────────────────────────────────────
+function parseOpeningHours(ohStr, date){
+  if(!ohStr) return null;
+  try{
+    const day=date.getDay();
+    const h=date.getHours()+date.getMinutes()/60;
+    const dayNames={su:0,mo:1,tu:2,we:3,th:4,fr:5,sa:6};
+    const rules=ohStr.toLowerCase().split(";").map(r=>r.trim()).filter(Boolean);
+    let result=null;
+    for(const rule of rules){
+      if(rule==="24/7"){result=true;continue;}
+      const m=rule.match(/^([a-z,\-]+)?\s*(?:(\d{1,2}:\d{2})-(\d{1,2}:\d{2})|off)$/);
+      if(!m) continue;
+      const dayPart=m[1]||"";
+      const openH=m[2],closeH=m[3];
+      const isOff=rule.includes("off");
+      let dayMatch=false;
+      if(!dayPart){dayMatch=true;}
+      else{
+        const segments=dayPart.split(",");
+        for(const seg of segments){
+          if(seg.includes("-")){
+            const[s,e]=seg.split("-");
+            const sd=dayNames[s.trim()],ed=dayNames[e.trim()];
+            if(sd===undefined||ed===undefined) continue;
+            if(sd<=ed){if(day>=sd&&day<=ed)dayMatch=true;}
+            else{if(day>=sd||day<=ed)dayMatch=true;}
+          } else {
+            if(dayNames[seg.trim()]===day) dayMatch=true;
+          }
+        }
+      }
+      if(!dayMatch) continue;
+      if(isOff){result=false;continue;}
+      if(openH&&closeH){
+        const[oh,om]=openH.split(":").map(Number);
+        const[ch,cm]=closeH.split(":").map(Number);
+        result=(h>=(oh+om/60)&&h<(ch+cm/60));
+      }
+    }
+    return result;
+  }catch(e){return null;}
+}
+
+function openStatus(tags, arrivalTime){
+  const oh=tags["opening_hours"]||"";
+  const type=tags.shop||tags.amenity||"";
+  if(type==="fuel"&&!oh) return{open:true,certain:false,label:"meist 24h geöffnet"};
+  if(type==="drinking_water") return{open:true,certain:true,label:"immer"};
+  if(!oh) return{open:null,certain:false,label:"unbekannt"};
+  const parsed=parseOpeningHours(oh,arrivalTime);
+  if(parsed===null) return{open:null,certain:false,label:oh.substring(0,22)};
+  return{open:parsed,certain:true,label:parsed?"offen":"geschlossen"};
+}
+
+// ── POI Icon Set (inline SVG) ─────────────────────────────────────────────────
+function poiSvg(type,color="#a8bbd4"){
+  const s=`stroke="${color}" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"`;
+  const icons={
+    supermarket:`<svg width="22" height="22" viewBox="0 0 24 24" ${s}>
+      <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+      <line x1="3" y1="6" x2="21" y2="6"/>
+      <path d="M16 10a4 4 0 0 1-8 0"/>
+    </svg>`,
+    convenience:`<svg width="22" height="22" viewBox="0 0 24 24" ${s}>
+      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+      <polyline points="9 22 9 12 15 12 15 22"/>
+    </svg>`,
+    kiosk:`<svg width="22" height="22" viewBox="0 0 24 24" ${s}>
+      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+      <polyline points="9 22 9 12 15 12 15 22"/>
+    </svg>`,
+    bakery:`<svg width="22" height="22" viewBox="0 0 24 24" ${s}>
+      <path d="M18 8h1a4 4 0 0 1 0 8h-1"/>
+      <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/>
+      <line x1="6" y1="1" x2="6" y2="4"/>
+      <line x1="10" y1="1" x2="10" y2="4"/>
+      <line x1="14" y1="1" x2="14" y2="4"/>
+    </svg>`,
+    deli:`<svg width="22" height="22" viewBox="0 0 24 24" ${s}>
+      <circle cx="12" cy="12" r="10"/>
+      <path d="M12 8v4l3 3"/>
+    </svg>`,
+    fuel:`<svg width="22" height="22" viewBox="0 0 24 24" ${s}>
+      <rect x="3" y="3" width="12" height="18" rx="1.5"/>
+      <rect x="5" y="5" width="8" height="5" rx="0.5"/>
+      <path d="M15 7h1.5a1.5 1.5 0 0 1 1.5 1.5v7a1.5 1.5 0 0 0 3 0V9l-2-2"/>
+      <line x1="3" y1="21" x2="15" y2="21"/>
+    </svg>`,
+    drinking_water:`<svg width="22" height="22" viewBox="0 0 24 24" ${s}>
+      <path d="M12 2C6 8 4 12 4 15a8 8 0 0 0 16 0c0-3-2-7-8-13z"/>
+    </svg>`
+  };
+  return icons[type]||`<svg width="22" height="22" viewBox="0 0 24 24" ${s}><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`;
+}
+
+const POI_ICONS={
+  supermarket:"🛒",
+  convenience:"🏪",
+  bakery:"🥖",
+  deli:"🧀",
+  kiosk:"🏪",
+  fuel:"⛽",
+  drinking_water:"💧"
+};
+const POI_PRIORITY={supermarket:5,bakery:4,deli:3,convenience:3,kiosk:2,fuel:2,drinking_water:1};
+
+function distToTrack(lat,lon){
+  let best=Infinity;
+  const step=Math.max(1,Math.floor(rawTrackPts.length/500));
+  for(let i=0;i<rawTrackPts.length;i+=step){
+    const p=rawTrackPts[i],d=Math.sqrt((lat-p.lat)**2+(lon-p.lon)**2)*111000;
+    if(d<best)best=d;
+  }
+  return best;
+}
+function kmOnTrack(lat,lon){
+  let best=Infinity,bkm=0;
+  const step=Math.max(1,Math.floor(rawTrackPts.length/500));
+  for(let i=0;i<rawTrackPts.length;i+=step){
+    const p=rawTrackPts[i],d=Math.sqrt((lat-p.lat)**2+(lon-p.lon)**2);
+    if(d<best){best=d;bkm=p.dist/1000;}
+  }
+  return Math.round(bkm);
+}
+function timeAtKm(km,computed){
+  const spd=Math.max(1,parseFloat(document.getElementById("speed").value)||20);
+  let base=computed[0].arrival,baseKm=0;
+  for(const s of computed){if(s.km<=km){base=s.departure||s.arrival;baseKm=s.km;}else break;}
+  return new Date(base.getTime()+((km-baseKm)/spd)*3600000);
+}
+
+async function loadPois(){
+  if(!rawTrackPts||!rawTrackPts.length){
+    document.getElementById("poi-body").innerHTML='<span style="color:var(--text3)">Zuerst GPX importieren</span>';return;
+  }
+  const btn=document.getElementById("poi-btn");
+  btn.textContent="⏳ Lädt…";btn.disabled=true;
+  document.getElementById("poi-body").innerHTML='<div style="color:var(--text3);font-size:12px;padding:8px 0">🔍 Suche Supermärkte, Bäckereien, Tankstellen…</div>';
+  const step=Math.max(1,Math.floor(rawTrackPts.length/130));
+  const poly=[];
+  for(let i=0;i<rawTrackPts.length;i+=step) poly.push(`${rawTrackPts[i].lat.toFixed(5)} ${rawTrackPts[i].lon.toFixed(5)}`);
+  const polyStr=poly.join(" ");
+  const query=`[out:json][timeout:30];(node["shop"~"^(supermarket|convenience|bakery|deli|kiosk)$"](around:400,${polyStr});node["amenity"="fuel"](around:400,${polyStr});node["amenity"="drinking_water"](around:400,${polyStr}););out body;`;
+  try{
+    const res=await fetch("https://overpass-api.de/api/interpreter",{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:"data="+encodeURIComponent(query)});
+    if(!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data=await res.json();
+    renderPois(data.elements||[]);
+  }catch(e){
+    document.getElementById("poi-body").innerHTML=`<div style="color:#f87171;font-size:13px">⚠️ ${e.message}<br><span style="font-size:11px;color:var(--text3)">Funktioniert auf GitHub Pages. In der Claude-App ist CORS geblockt.</span></div>`;
+  }finally{btn.textContent="🔍 Neu laden";btn.disabled=false;}
+}
+
+function renderPois(elements){
+  const body=document.getElementById("poi-body");
+  const computed=computeSchedule();
+  const totalKm=stops[stops.length-1].km;
+  const spd=Math.max(1,parseFloat(document.getElementById("speed").value)||20);
+  if(!elements.length){body.innerHTML='<div style="color:var(--text3);font-size:12px">Keine Versorgungspunkte gefunden</div>';return;}
+  const pois=elements.filter(e=>e.lat&&e.lon).map(e=>{
+    const t=e.tags||{};const type=t.shop||t.amenity||"?";
+    const km=kmOnTrack(e.lat,e.lon);const arrival=timeAtKm(km,computed);
+    const status=openStatus(t,arrival);
+    return{name:t.name||(POI_ICONS[type]||"?"),type,icon:POI_ICONS[type]||"📍",priority:POI_PRIORITY[type]||1,km,arrival,status,oh:t["opening_hours"]||"",dist:distToTrack(e.lat,e.lon)};
+  }).filter(p=>p.dist<400).sort((a,b)=>a.km-b.km);
+  if(!pois.length){body.innerHTML='<div style="color:var(--text3);font-size:12px">Keine Punkte innerhalb 400m der Route</div>';return;}
+
+  // Critical gaps
+  const openPois=pois.filter(p=>p.status.open!==false&&p.type!=="drinking_water");
+  let html="",lastKm=0;
+  const gaps=[];
+  for(const p of openPois){if(p.km-lastKm>60)gaps.push({from:lastKm,to:p.km,gap:p.km-lastKm});lastKm=p.km;}
+  if(totalKm-lastKm>60)gaps.push({from:lastKm,to:totalKm,gap:totalKm-lastKm});
+  if(gaps.length){
+    html+=gaps.map(g=>`<div style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);border-radius:8px;padding:9px 12px;margin-bottom:8px;font-size:12px;color:#f87171;font-weight:600">⚠️ ${g.gap} km ohne sicheren Einkauf · km ${g.from}–${g.to} · ~${(g.gap/spd).toFixed(1)} h</div>`).join("");
+  }
+
+  // Stats
+  const oc=pois.filter(p=>p.status.open===true).length,cc=pois.filter(p=>p.status.open===false).length,unk=pois.filter(p=>p.status.open===null).length;
+  html+=`<div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:12px">
+    <span style="background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.2);border-radius:7px;padding:5px 10px;font-size:11px;color:#4ade80;font-weight:700">🟢 ${oc}</span>
+    <span style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);border-radius:7px;padding:5px 10px;font-size:11px;color:#f87171;font-weight:700">🔴 ${cc}</span>
+    <span style="background:rgba(100,116,139,.1);border:1px solid var(--border);border-radius:7px;padding:5px 10px;font-size:11px;color:var(--text3);font-weight:700">❓ ${unk}</span>
+    <span style="background:rgba(100,116,139,.06);border:1px solid var(--border);border-radius:7px;padding:5px 10px;font-size:11px;color:var(--text3)">📍 ${pois.length} gesamt</span>
+  </div>`;
+
+  // Segment cards (30km)
+  const segs={};
+  pois.forEach(p=>{const s=Math.floor(p.km/30)*30;if(!segs[s])segs[s]=[];segs[s].push(p);});
+  Object.keys(segs).sort((a,b)=>+a-+b).forEach(sk=>{
+    const sp=segs[sk].sort((a,b)=>{
+      const as=(a.status.open===true?100:a.status.open===null?50:0)+a.priority;
+      const bs=(b.status.open===true?100:b.status.open===null?50:0)+b.priority;
+      return bs-as;
+    });
+    const hasOpen=sp.some(p=>p.status.open===true);
+    const hc=hasOpen?"rgba(34,197,94,.08)":"rgba(239,68,68,.06)";
+    const hb=hasOpen?"rgba(34,197,94,.2)":"rgba(239,68,68,.15)";
+    html+=`<div style="margin-bottom:8px;border:1px solid ${hb};border-radius:10px;overflow:hidden">
+      <div style="background:${hc};padding:7px 12px;display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:11px;font-weight:800;color:var(--text2)">km ${sk}–${Math.min(+sk+30,totalKm)}</span>
+        <span style="font-size:11px;color:${hasOpen?"#4ade80":"#f87171"};font-weight:700">${hasOpen?"✓ ok":"✗ kritisch"}</span>
+      </div>`;
+    sp.slice(0,3).forEach((p,pi)=>{
+      const sc=p.status.open===true?"#4ade80":p.status.open===false?"#f87171":"var(--text3)";
+      const si=p.status.open===true?"🟢":p.status.open===false?"🔴":"❓";
+      const iconColor=p.status.open===true?"#4ade80":p.status.open===false?"#f87171":"#6b85a5";
+      html+=`<div style="padding:9px 12px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px">
+        <div style="flex-shrink:0;opacity:${pi===0?1:0.7}">${poiSvg(p.type,iconColor)}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:700;color:${pi===0?"var(--text)":"var(--text2)"};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.name}</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:1px">${p.oh||"Zeiten unbekannt"}</div>
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <div style="font-size:12px;font-weight:700;color:${sc}">${si} ${p.status.label}</div>
+          <div style="font-size:10px;color:var(--text3)">km ${p.km} · ${fmt(p.arrival)}</div>
+        </div>
+      </div>`;
+    });
+    if(sp.length>3)html+=`<div style="padding:5px 12px;border-top:1px solid var(--border);font-size:11px;color:var(--text3)">+${sp.length-3} weitere</div>`;
+    html+=`</div>`;
+  });
+  html+=`<div style="font-size:10px;color:var(--text3);margin-top:6px">© OpenStreetMap · Öffnungszeiten aus OSM · Ankunft basierend auf deinen Parametern</div>`;
+  body.innerHTML=html;
+}
+
+
+function renderTable(computed){
+  const tbody=document.getElementById("tbl-body");
+  tbody.innerHTML="";
+  computed.forEach((s,i)=>{
+    const isF=i===0,isL=i===stops.length-1;
+    const typ=typeOf(s,i,computed);
+    const col=COLOR[typ]||"#64748b";
+    const dark=isDark(s.arrival);
+    const rs=(!isF&&!isL)?resupplyStatus(s.arrival):null;
+
+    // Ampel: grün=ok, gelb=knapp/achtung, rot=kritisch, grau=nacht
+    let ampelColor,ampelTitle;
+    if(isF||isL){
+      ampelColor=null;
+    } else if(dark&&rs&&!rs.open){
+      ampelColor="#ef4444";ampelTitle="Nacht + kein Resupply";
+    } else if(dark){
+      ampelColor="#94a3b8";ampelTitle="Nachtfahrt";
+    } else if(rs&&!rs.open){
+      ampelColor="#ef4444";ampelTitle=rs.label;
+    } else if(rs&&rs.show&&rs.open){
+      ampelColor="#f59e0b";ampelTitle=rs.label;
+    } else {
+      ampelColor="#22c55e";ampelTitle="Versorgung ok";
+    }
+    // also factor in stop-gap warnings
+    const stopW=getStopWarnings(s,i,computed);
+    if(stopW.some(w=>w.level==="red"))ampelColor="#ef4444";
+    else if(stopW.some(w=>w.level==="orange")&&ampelColor==="#22c55e")ampelColor="#f59e0b";
+
+    const ampelCell=ampelColor
+      ?`<td style="width:24px;text-align:center;padding:0 4px"><span style="display:inline-block;width:13px;height:13px;border-radius:50%;background:${ampelColor};flex-shrink:0" title="${ampelTitle||""}"></span></td>`
+      :`<td style="width:24px"></td>`;
+
+    // row bg: align with chart colors
+    let rowBg=i%2===1?"rgba(30,41,59,0.5)":"transparent";
+    if(hovIdx===i)rowBg="rgba(245,158,11,.09)";
+    else if(dark)rowBg="rgba(71,85,105,0.15)";
+    else if(rs&&rs.show&&!rs.open)rowBg="rgba(239,68,68,.08)";
+    else if(rs&&rs.show&&rs.open)rowBg="rgba(245,158,11,.07)";
+
+    const tr=document.createElement("tr");
+    if(hovIdx===i)tr.classList.add("active");
+    tr.style.background=rowBg;
+
+    const delBtn=isF||isL
+      ? `<td style="width:32px"></td>`
+      : `<td style="width:32px;text-align:center"><button data-del="${i}" style="background:none;border:none;cursor:pointer;padding:4px;border-radius:6px;line-height:1;font-size:17px;color:#ef4444" title="Zeile löschen">✕</button></td>`;
+
+    const resupplyBadge=(rs&&rs.show)
+      ?`<div style="font-size:10px;color:${rs.open?"#f59e0b":"#f87171"};margin-top:2px;opacity:0.9">${rs.icon} ${rs.label}</div>`
+      :"";
+    const nightMark="";
+    const warnBadges=stopW.map(w=>{
+      const wc={red:"#f87171",orange:"#fb923c",yellow:"#fbbf24"}[w.level]||"#6b85a5";
+      return `<div style="font-size:10px;color:${wc};margin-top:2px;opacity:0.85">${w.icon} ${w.text}</div>`;
+    }).join("");
+
+    let diffCell="<td></td>";
+    if(!isL){
+      const df=difficultyScore(s.km,computed[i+1].km);
+      const colors=["","#22c55e","#84cc16","#f59e0b","#ef4444","#a855f7"];
+      const dcol=colors[df.score]||"#6b85a5";
+      // clean bar indicator instead of emoji mountains
+      const bars=Array.from({length:5},(_,b)=>{
+        const filled=b<df.score;
+        return `<span style="display:inline-block;width:4px;height:${8+b*3}px;border-radius:2px;background:${filled?dcol:"rgba(255,255,255,0.1)"};margin-right:2px;vertical-align:bottom"></span>`;
+      }).join("");
+      diffCell=`<td style="white-space:nowrap" title="${df.label} · ${df.uphillM}m ↑">
+        <div style="display:flex;align-items:flex-end;gap:0;margin-bottom:2px">${bars}</div>
+        <div style="font-size:10px;color:var(--text3)">${df.uphillM}m</div>
+      </td>`;
+    }
+
+    tr.innerHTML=`
+      ${delBtn}
+      <td style="color:#94a3b8;font-size:11px;text-align:center;padding:0 4px">${i+1}</td>
+      ${ampelCell}
+      <td><input type="text" value="${s.region}" style="color:${col}" data-i="${i}" data-f="region"/>${resupplyBadge}${warnBadges}</td>
+      <td>${isF||isL?`<span style="font-family:monospace;color:#64748b">${s.km}</span>`:`<input type="number" value="${s.km}" min="0" max="${stops[stops.length-1].km}" step="1" data-i="${i}" data-f="km"/>`}</td>
+      ${diffCell}
+      <td style="font-family:monospace;white-space:nowrap;font-size:12px">${fmt(s.arrival)}</td>
+      <td>${isF||isL?`<span style="color:#94a3b8">—</span>`:`<input type="number" value="${s.pause}" min="0" max="240" step="5" data-i="${i}" data-f="pause"/>`}</td>
+      <td style="font-family:monospace;white-space:nowrap;font-size:12px">${isL?"—":fmt(s.departure)}</td>
+      <td><input type="text" value="${s.hinweis}" style="color:#64748b;font-weight:400;font-size:12px" data-i="${i}" data-f="hinweis"/></td>`;
+    tbody.appendChild(tr);
+  });
+
+  tbody.querySelectorAll("input").forEach(inp=>{
+    inp.addEventListener("change",e=>{
+      const idx=+e.target.dataset.i,f=e.target.dataset.f;
+      stops[idx][f]=f==="km"||f==="pause"?+e.target.value:e.target.value;
+      renderAll();
+    });
+  });
+
+  // delete buttons
+  tbody.querySelectorAll("button[data-del]").forEach(btn=>{
+    btn.addEventListener("click",e=>{
+      const idx=+e.currentTarget.dataset.del;
+      stops.splice(idx,1);
+      if(hovIdx===idx)hovIdx=null;
+      else if(hovIdx>idx)hovIdx--;
+      renderAll();
+    });
+  });
+}
+
+// ── Summary ───────────────────────────────────────────────────────────────────
+function renderSummary(computed){
+  const spd=Math.max(1,parseFloat(document.getElementById("speed").value)||20);
+  const totalKm=stops[stops.length-1].km;
+  const totalPause=stops.reduce((a,s)=>a+(+s.pause),0);
+  const totalTime=((computed[computed.length-1].arrival-computed[0].arrival)/3600000).toFixed(1);
+  const{up,down}=totalElevation();
+  document.getElementById("summary").textContent=`Fahrzeit: ${(totalKm/spd).toFixed(1)} h · Pausen: ${totalPause} min · Gesamt: ${totalTime} h`;
+  document.getElementById("route-sub").textContent=`${totalKm} km · ${totalTime} h · ↑${up}m ↓${down}m · ${stops.length-2} Pausen`;
+}
+
+// ── Render all ────────────────────────────────────────────────────────────────
+// ── Map toggle ────────────────────────────────────────────────────────────────
+let mapOpen=false;
+function toggleMap(){
+  mapOpen=!mapOpen;
+  const body=document.getElementById("map-body");
+  const chevron=document.getElementById("map-chevron");
+  body.style.display=mapOpen?"block":"none";
+  chevron.style.transform=mapOpen?"rotate(180deg)":"";
+  if(mapOpen){
+    // init canvas size first time
+    const canvas=document.getElementById("map-canvas");
+    if(canvas&&canvas.width===0)initCanvasMap();
+    renderMap(computeSchedule());
+  }
+}
+
+// ── Canvas Map (no external deps) ────────────────────────────────────────────
+const STOP_COLORS={start:"#1d4ed8",end:"#16a34a",long:"#dc2626",shop:"#ea580c",short:"#64748b"};
+
+let mapState={
+  offsetX:0,offsetY:0,scale:1,
+  minLat:0,maxLat:1,minLon:0,maxLon:1,
+  dragging:false,lastX:0,lastY:0,
+  pinching:false,lastDist:0,
+  trackPts:[],stopPts:[],
+  activePopup:null
+};
+
+function initCanvasMap(){
+  const canvas=document.getElementById("map-canvas");
+  if(!canvas)return;
+  canvas.width=canvas.offsetWidth*window.devicePixelRatio||canvas.offsetWidth;
+  canvas.height=Math.round(canvas.width*1.1);
+  canvas.style.height=(canvas.height/window.devicePixelRatio)+"px";
+
+  // touch events
+  canvas.addEventListener("touchstart",onMapTouchStart,{passive:false});
+  canvas.addEventListener("touchmove",onMapTouchMove,{passive:false});
+  canvas.addEventListener("touchend",onMapTouchEnd,{passive:false});
+  canvas.addEventListener("mousedown",onMapMouseDown);
+  canvas.addEventListener("mousemove",onMapMouseMove);
+  canvas.addEventListener("mouseup",onMapMouseUp);
+  canvas.addEventListener("mouseleave",()=>{mapState.dragging=false;});
+  canvas.addEventListener("wheel",onMapWheel,{passive:false});
+}
+
+function latlonToCanvas(lat,lon,canvas){
+  const{minLat,maxLat,minLon,maxLon,offsetX,offsetY,scale}=mapState;
+  const W=canvas.width,H=canvas.height;
+  // Mercator-ish projection
+  const latRad=lat*Math.PI/180;
+  const minLatRad=minLat*Math.PI/180;
+  const maxLatRad=maxLat*Math.PI/180;
+  const mx=Math.log(Math.tan(Math.PI/4+latRad/2));
+  const mxMin=Math.log(Math.tan(Math.PI/4+minLatRad/2));
+  const mxMax=Math.log(Math.tan(Math.PI/4+maxLatRad/2));
+  const pad=0.06;
+  const x=((lon-minLon)/(maxLon-minLon))*(1-2*pad)*W*scale+pad*W*scale+offsetX;
+  const y=((mxMax-mx)/(mxMax-mxMin))*(1-2*pad)*H*scale+pad*H*scale+offsetY;
+  return[x,y];
+}
+
+function drawMap(){
+  const canvas=document.getElementById("map-canvas");
+  if(!canvas)return;
+  const ctx=canvas.getContext("2d");
+  const W=canvas.width,H=canvas.height;
+  const dpr=window.devicePixelRatio||1;
+
+  // background — simple OSM-style colours
+  ctx.fillStyle="#e8f0f8";
+  ctx.fillRect(0,0,W,H);
+
+  if(!mapState.trackPts.length){
+    ctx.fillStyle="#94a3b8";
+    ctx.font=`${14*dpr}px -apple-system,sans-serif`;
+    ctx.textAlign="center";
+    ctx.fillText("GPX importieren um Route anzuzeigen",W/2,H/2);
+    return;
+  }
+
+  // draw track
+  ctx.beginPath();
+  ctx.strokeStyle="#0284c7";
+  ctx.lineWidth=2.5*dpr;
+  ctx.lineJoin="round";
+  ctx.lineCap="round";
+  let first=true;
+  for(const pt of mapState.trackPts){
+    const[x,y]=latlonToCanvas(pt[0],pt[1],canvas);
+    if(first){ctx.moveTo(x,y);first=false;}else ctx.lineTo(x,y);
+  }
+  ctx.stroke();
+
+  // draw stop pins
+  mapState.stopPts.forEach((s,i)=>{
+    const[x,y]=latlonToCanvas(s.lat,s.lon,canvas);
+    const r=9*dpr;
+    const col=s.color;
+    // pin shape
+    ctx.beginPath();
+    ctx.arc(x,y-r*1.2,r,0,Math.PI*2);
+    ctx.fillStyle=col;
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(x,y);
+    ctx.lineTo(x-r*0.6,y-r*1.2);
+    ctx.lineTo(x+r*0.6,y-r*1.2);
+    ctx.closePath();
+    ctx.fillStyle=col;
+    ctx.fill();
+    // label
+    ctx.fillStyle="#fff";
+    ctx.font=`bold ${8*dpr}px -apple-system,sans-serif`;
+    ctx.textAlign="center";
+    ctx.textBaseline="middle";
+    ctx.fillText(s.label,x,y-r*1.2);
+  });
+
+  // popup
+  const popup=document.getElementById("map-popup");
+  if(mapState.activePopup!==null){
+    const s=mapState.stopPts[mapState.activePopup];
+    if(s){
+      const[x,y]=latlonToCanvas(s.lat,s.lon,canvas);
+      const cx=x/dpr,cy=(y/dpr)-28;
+      popup.style.display="block";
+      popup.style.left=Math.min(cx,canvas.offsetWidth-210)+"px";
+      popup.style.top=Math.max(4,cy-popup.offsetHeight-4)+"px";
+      popup.innerHTML=`<div style="font-weight:800;color:${s.color};margin-bottom:4px">${s.region}</div>`+
+        `<div style="color:#475569;line-height:1.7"><b>km:</b> ${s.km}<br><b>Ankunft:</b> ${s.arrivalStr}<br><b>Pause:</b> ${s.pauseStr}<br><b>Abfahrt:</b> ${s.departStr}${s.hinweis?`<br><b>Hinweis:</b> ${s.hinweis}`:""}</div>`;
+    }
+  } else {
+    popup.style.display="none";
+  }
+}
+
+function renderMap(computed){
+  if(!mapOpen)return;
+  const canvas=document.getElementById("map-canvas");
+  if(!canvas)return;
+  if(canvas.width===0)initCanvasMap();
+
+  const hasTrack=rawTrackPts&&rawTrackPts.length>0;
+  document.getElementById("map-hint").textContent=
+    mapOpen
+      ? (hasTrack?"Pin antippen für Details":"GPX importieren um Route anzuzeigen")
+      : (hasTrack?"Route geladen – antippen zum Anzeigen":"GPX importieren für Kartenansicht");
+
+  if(!rawTrackPts||!rawTrackPts.length){mapState.trackPts=[];mapState.stopPts=[];drawMap();return;}
+
+  // build downsampled track
+  const step=Math.max(1,Math.floor(rawTrackPts.length/1200));
+  mapState.trackPts=[];
+  let minLat=90,maxLat=-90,minLon=180,maxLon=-180;
+  for(let i=0;i<rawTrackPts.length;i+=step){
+    const p=rawTrackPts[i];
+    mapState.trackPts.push([p.lat,p.lon]);
+    if(p.lat<minLat)minLat=p.lat;if(p.lat>maxLat)maxLat=p.lat;
+    if(p.lon<minLon)minLon=p.lon;if(p.lon>maxLon)maxLon=p.lon;
+  }
+  const latPad=(maxLat-minLat)*0.08,lonPad=(maxLon-minLon)*0.08;
+  mapState.minLat=minLat-latPad;mapState.maxLat=maxLat+latPad;
+  mapState.minLon=minLon-lonPad;mapState.maxLon=maxLon+lonPad;
+  mapState.offsetX=0;mapState.offsetY=0;mapState.scale=1;
+  mapState.activePopup=null;
+
+  // build stop points
+  function posForKm(km){
+    if(!rawTrackPts||!rawTrackPts.length)return null;
+    const t=km*1000;let best=Infinity,bi=0;
+    for(let i=0;i<rawTrackPts.length;i++){const d=Math.abs(rawTrackPts[i].dist-t);if(d<best){best=d;bi=i;}}
+    return rawTrackPts[bi];
+  }
+  mapState.stopPts=computed.map((s,i)=>{
+    const p=posForKm(s.km);if(!p)return null;
+    const typ=typeOf(s,i,computed);
+    const isF=i===0,isL=i===stops.length-1;
+    return{
+      lat:p.lat,lon:p.lon,color:STOP_COLORS[typ]||"#64748b",
+      label:isF?"S":isL?"Z":String(i),
+      region:s.region,km:s.km,
+      arrivalStr:fmt(s.arrival),
+      pauseStr:isF||isL?"—":`${s.pause} Min`,
+      departStr:isL?"—":fmt(s.departure),
+      hinweis:s.hinweis
+    };
+  }).filter(Boolean);
+
+  drawMap();
+}
+
+// ── Map interactions ──────────────────────────────────────────────────────────
+let tileCache={};
+
+function latLonToTile(lat,lon,zoom){
+  const n=Math.pow(2,zoom);
+  const x=Math.floor((lon+180)/360*n);
+  const latR=lat*Math.PI/180;
+  const y=Math.floor((1-Math.log(Math.tan(latR)+1/Math.cos(latR))/Math.PI)/2*n);
+  return{x,y,z:zoom};
+}
+function tileToLatLon(tx,ty,zoom){
+  const n=Math.pow(2,zoom);
+  const lon=tx/n*360-180;
+  const latR=Math.atan(Math.sinh(Math.PI*(1-2*ty/n)));
+  return{lat:latR*180/Math.PI,lon};
+}
+
+function getZoomLevel(canvas){
+  // pick zoom based on scale and bounding box size
+  const{minLat,maxLat,minLon,maxLon,scale}=mapState;
+  const latSpan=(maxLat-minLat)/scale;
+  const lonSpan=(maxLon-minLon)/scale;
+  const span=Math.max(latSpan,lonSpan);
+  if(span>20)return 6;
+  if(span>10)return 7;
+  if(span>5)return 8;
+  if(span>2)return 9;
+  if(span>1)return 10;
+  if(span>0.5)return 11;
+  return 12;
+}
+
+function drawTiles(canvas,ctx,onDone){
+  if(!mapState.trackPts.length)return;
+  const zoom=getZoomLevel(canvas);
+  const{minLat,maxLat,minLon,maxLon}=mapState;
+
+  // find tile range that covers our bbox (with padding)
+  const tMin=latLonToTile(maxLat,minLon,zoom);
+  const tMax=latLonToTile(minLat,maxLon,zoom);
+  const txMin=tMin.x,txMax=tMax.x,tyMin=tMin.y,tyMax=tMax.y;
+
+  const promises=[];
+  for(let tx=txMin;tx<=txMax;tx++){
+    for(let ty=tyMin;ty<=tyMax;ty++){
+      const key=`${zoom}/${tx}/${ty}`;
+      if(!tileCache[key]){
+        const img=new Image();
+        img.crossOrigin="anonymous";
+        // use subdomains a/b/c
+        const sub=["a","b","c"][(tx+ty)%3];
+        img.src=`https://${sub}.tile.openstreetmap.org/${zoom}/${tx}/${ty}.png`;
+        tileCache[key]={img,loaded:false};
+        const entry=tileCache[key];
+        promises.push(new Promise(res=>{
+          img.onload=()=>{entry.loaded=true;res();};
+          img.onerror=()=>res();
+          setTimeout(res,3000);
+        }));
+      }
+    }
+  }
+
+  Promise.all(promises).then(()=>{
+    // draw loaded tiles
+    for(let tx=txMin;tx<=txMax;tx++){
+      for(let ty=tyMin;ty<=tyMax;ty++){
+        const key=`${zoom}/${tx}/${ty}`;
+        const entry=tileCache[key];
+        if(!entry||!entry.loaded)continue;
+        // tile corners in lat/lon
+        const tl=tileToLatLon(tx,ty,zoom);
+        const br=tileToLatLon(tx+1,ty+1,zoom);
+        const[x1,y1]=latlonToCanvas(tl.lat,tl.lon,canvas);
+        const[x2,y2]=latlonToCanvas(br.lat,br.lon,canvas);
+        ctx.drawImage(entry.img,x1,y1,x2-x1,y2-y1);
+      }
+    }
+    onDone();
+  });
+}
+
+function drawMap(){
+  const canvas=document.getElementById("map-canvas");
+  if(!canvas)return;
+  const ctx=canvas.getContext("2d");
+  const W=canvas.width,H=canvas.height;
+  const dpr=window.devicePixelRatio||1;
+
+  ctx.fillStyle="#e8f0f8";
+  ctx.fillRect(0,0,W,H);
+
+  if(!mapState.trackPts.length){
+    ctx.fillStyle="#94a3b8";
+    ctx.font=`${14*dpr}px -apple-system,sans-serif`;
+    ctx.textAlign="center";ctx.textBaseline="middle";
+    ctx.fillText("GPX importieren um Route anzuzeigen",W/2,H/2);
+    return;
+  }
+
+  // draw tiles first, then overlay
+  drawTiles(canvas,ctx,()=>drawOverlay(canvas,ctx,dpr));
+  drawOverlay(canvas,ctx,dpr); // also draw immediately (tiles may already be cached)
+}
+
+function drawOverlay(canvas,ctx,dpr){
+  const W=canvas.width,H=canvas.height;
+
+  // track
+  ctx.beginPath();
+  ctx.strokeStyle="#0057b8";
+  ctx.lineWidth=3*dpr;
+  ctx.lineJoin="round";ctx.lineCap="round";
+  ctx.shadowColor="rgba(0,87,184,0.35)";
+  ctx.shadowBlur=4*dpr;
+  let first=true;
+  for(const pt of mapState.trackPts){
+    const[x,y]=latlonToCanvas(pt[0],pt[1],canvas);
+    if(first){ctx.moveTo(x,y);first=false;}else ctx.lineTo(x,y);
+  }
+  ctx.stroke();
+  ctx.shadowBlur=0;
+
+  // pins
+  mapState.stopPts.forEach((s,i)=>{
+    const[x,y]=latlonToCanvas(s.lat,s.lon,canvas);
+    const r=10*dpr;
+    const active=mapState.activePopup===i;
+    const col=s.color;
+
+    // shadow
+    ctx.shadowColor="rgba(0,0,0,0.25)";ctx.shadowBlur=6*dpr;
+
+    // teardrop pin
+    ctx.beginPath();
+    ctx.arc(x,y-r*1.4,r*(active?1.3:1),0,Math.PI*2);
+    ctx.fillStyle=col;ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(x,y+2*dpr);
+    ctx.lineTo(x-r*0.7,y-r*1.0);
+    ctx.lineTo(x+r*0.7,y-r*1.0);
+    ctx.closePath();
+    ctx.fillStyle=col;ctx.fill();
+    ctx.shadowBlur=0;
+
+    // white circle inside
+    ctx.beginPath();
+    ctx.arc(x,y-r*1.4,r*0.6,0,Math.PI*2);
+    ctx.fillStyle="#fff";ctx.fill();
+
+    // label
+    ctx.fillStyle=col;
+    ctx.font=`bold ${active?9*dpr:8*dpr}px -apple-system,sans-serif`;
+    ctx.textAlign="center";ctx.textBaseline="middle";
+    ctx.fillText(s.label,x,y-r*1.4);
+  });
+
+  // popup
+  const popup=document.getElementById("map-popup");
+  if(mapState.activePopup!==null){
+    const s=mapState.stopPts[mapState.activePopup];
+    if(s){
+      const[x,y]=latlonToCanvas(s.lat,s.lon,canvas);
+      const pinTipY=y/dpr+2;
+      const popW=210;
+      let left=x/dpr-popW/2;
+      left=Math.max(4,Math.min(left,canvas.offsetWidth-popW-4));
+      popup.style.display="block";
+      popup.style.left=left+"px";
+      popup.style.top=Math.max(4,pinTipY-popup.offsetHeight-40)+"px";
+      popup.innerHTML=
+        `<div style="font-weight:800;color:${s.color};margin-bottom:4px;font-size:13px">${s.region}</div>`+
+        `<div style="color:#475569;line-height:1.75;font-size:12px"><b>km:</b> ${s.km}<br>`+
+        `<b>Ankunft:</b> ${s.arrivalStr}<br><b>Pause:</b> ${s.pauseStr}<br>`+
+        `<b>Abfahrt:</b> ${s.departStr}${s.hinweis?`<br><span style="color:#64748b">${s.hinweis}</span>`:""}</div>`;
+    }
+  } else {
+    popup.style.display="none";
+  }
+}
+
+// touch state — track movement to distinguish tap vs drag
+let touchStartX=0,touchStartY=0,touchMoved=false;
+
+function onMapTouchStart(e){
+  e.preventDefault();
+  if(e.touches.length===1){
+    mapState.dragging=true;
+    mapState.lastX=e.touches[0].clientX;
+    mapState.lastY=e.touches[0].clientY;
+    touchStartX=e.touches[0].clientX;
+    touchStartY=e.touches[0].clientY;
+    touchMoved=false;
+  } else if(e.touches.length===2){
+    mapState.pinching=true;mapState.dragging=false;
+    mapState.lastDist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
+    touchMoved=true;
+  }
+}
+function onMapTouchMove(e){
+  e.preventDefault();
+  const canvas=document.getElementById("map-canvas");
+  const dpr=window.devicePixelRatio||1;
+  if(e.touches.length===1&&mapState.dragging){
+    const dx=e.touches[0].clientX-mapState.lastX;
+    const dy=e.touches[0].clientY-mapState.lastY;
+    if(Math.abs(e.touches[0].clientX-touchStartX)>6||Math.abs(e.touches[0].clientY-touchStartY)>6)touchMoved=true;
+    mapState.offsetX+=dx*dpr;mapState.offsetY+=dy*dpr;
+    mapState.lastX=e.touches[0].clientX;mapState.lastY=e.touches[0].clientY;
+    if(touchMoved)mapState.activePopup=null;
+    drawMap();
+  } else if(e.touches.length===2&&mapState.pinching){
+    const dist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
+    const ratio=dist/mapState.lastDist;
+    const cx=canvas.width/2,cy=canvas.height/2;
+    mapState.offsetX=(mapState.offsetX-cx)*ratio+cx;
+    mapState.offsetY=(mapState.offsetY-cy)*ratio+cy;
+    mapState.scale*=ratio;mapState.lastDist=dist;
+    drawMap();
+  }
+}
+function onMapTouchEnd(e){
+  if(e.touches.length===0){
+    if(!touchMoved){
+      checkPinTap(e.changedTouches[0].clientX,e.changedTouches[0].clientY);
+    }
+    mapState.dragging=false;mapState.pinching=false;
+  }
+}
+function onMapMouseDown(e){
+  mapState.dragging=true;mapState.lastX=e.clientX;mapState.lastY=e.clientY;
+  touchStartX=e.clientX;touchStartY=e.clientY;touchMoved=false;
+}
+function onMapMouseMove(e){
+  if(!mapState.dragging)return;
+  const dpr=window.devicePixelRatio||1;
+  if(Math.abs(e.clientX-touchStartX)>4||Math.abs(e.clientY-touchStartY)>4)touchMoved=true;
+  mapState.offsetX+=(e.clientX-mapState.lastX)*dpr;
+  mapState.offsetY+=(e.clientY-mapState.lastY)*dpr;
+  mapState.lastX=e.clientX;mapState.lastY=e.clientY;
+  if(touchMoved)mapState.activePopup=null;
+  drawMap();
+}
+function onMapMouseUp(e){
+  if(!touchMoved)checkPinTap(e.clientX,e.clientY);
+  mapState.dragging=false;
+}
+function onMapWheel(e){
+  e.preventDefault();
+  const canvas=document.getElementById("map-canvas");
+  const dpr=window.devicePixelRatio||1;
+  const rect=canvas.getBoundingClientRect();
+  const cx=(e.clientX-rect.left)*dpr,cy=(e.clientY-rect.top)*dpr;
+  const ratio=e.deltaY<0?1.15:0.87;
+  mapState.offsetX=(mapState.offsetX-cx)*ratio+cx;
+  mapState.offsetY=(mapState.offsetY-cy)*ratio+cy;
+  mapState.scale*=ratio;drawMap();
+}
+function checkPinTap(cx,cy){
+  const canvas=document.getElementById("map-canvas");
+  if(!canvas)return;
+  const dpr=window.devicePixelRatio||1;
+  const rect=canvas.getBoundingClientRect();
+  const px=(cx-rect.left)*dpr,py=(cy-rect.top)*dpr;
+  let hit=null,bestD=22*dpr;
+  mapState.stopPts.forEach((s,i)=>{
+    const[x,y]=latlonToCanvas(s.lat,s.lon,canvas);
+    // hit area: the pin head circle
+    const d=Math.hypot(px-x,py-(y-14*dpr));
+    if(d<bestD){bestD=d;hit=i;}
+  });
+  // toggle: tap same pin again → close
+  if(hit!==null&&hit===mapState.activePopup)mapState.activePopup=null;
+  else mapState.activePopup=hit;
+  drawMap();
+}
+function highlightMarker(i){
+  mapState.activePopup=(mapState.activePopup===i)?null:i;
+  drawMap();
+}
+
+window.addEventListener("resize",()=>{
+  const canvas=document.getElementById("map-canvas");
+  if(canvas&&mapState.trackPts.length){
+    canvas.width=canvas.offsetWidth*(window.devicePixelRatio||1);
+    canvas.height=Math.round(canvas.width*1.1);
+    canvas.style.height=(canvas.height/(window.devicePixelRatio||1))+"px";
+    mapState.offsetX=0;mapState.offsetY=0;mapState.scale=1;
+    drawMap();
+  }
+});
+
+// ── GPX parser ────────────────────────────────────────────────────────────────
+function haversine(a,b,c,d){const R=6371000,p1=a*Math.PI/180,p2=c*Math.PI/180,dp=(c-a)*Math.PI/180,dl=(d-b)*Math.PI/180,x=Math.sin(dp/2)**2+Math.cos(p1)*Math.cos(p2)*Math.sin(dl/2)**2;return 2*R*Math.asin(Math.sqrt(x));}
+
+function parseGpx(txt){
+  const doc=new DOMParser().parseFromString(txt,"application/xml");
+  const ns="http://www.topografix.com/GPX/1/1";
+  const pts=doc.getElementsByTagNameNS(ns,"trkpt");
+  if(!pts.length)throw new Error("Keine Trackpunkte gefunden");
+  const raw=[];
+  for(const p of pts){const e=p.getElementsByTagNameNS(ns,"ele")[0];raw.push({lat:+p.getAttribute("lat"),lon:+p.getAttribute("lon"),ele:e?+e.textContent:0});}
+  let cum=0;
+  const wd=[{...raw[0],dist:0}];
+  for(let i=1;i<raw.length;i++){cum+=haversine(raw[i-1].lat,raw[i-1].lon,raw[i].lat,raw[i].lon);wd.push({...raw[i],dist:cum});}
+  const totalKm=Math.round(cum/1000);
+  const grid=[];let j=0;
+  for(let g=0;g<=totalKm;g++){const t=g*1000;while(j<wd.length-1&&wd[j+1].dist<t)j++;const a=wd[j],b=wd[j+1]||a,f=b.dist>a.dist?(t-a.dist)/(b.dist-a.dist):0;grid.push([g,Math.round((a.ele+f*(b.ele-a.ele))*10)/10]);}
+  const interval=parseInt(document.getElementById("pause-interval").value)||60;
+  const newStops=[];
+  for(let km=0;km<=totalKm;km+=interval){const k=Math.min(km,totalKm),f=km===0,l=k===totalKm;newStops.push({km:k,region:f?"Start":l?"Ziel":`km ${k}`,pause:f||l?0:25,hinweis:f?"Start":l?"Ankunft":"Pause",type:f?"start":l?"end":"short"});}
+  if(newStops[newStops.length-1].km!==totalKm)newStops.push({km:totalKm,region:"Ziel",pause:0,hinweis:"Ankunft",type:"end"});
+  const nm=doc.getElementsByTagNameNS(ns,"name")[0];
+  return{grid,stops:newStops,trackName:nm?nm.textContent:"Neue Route",raw:wd};
+}
+
+// ── Add pause ─────────────────────────────────────────────────────────────────
+function addPause(){
+  const km=parseInt(document.getElementById("add-km").value);
+  const pause=parseInt(document.getElementById("add-pause").value)||25;
+  const region=document.getElementById("add-region").value.trim();
+  const errEl=document.getElementById("add-err");
+  const totalKm=stops[stops.length-1].km;
+
+  if(!km||km<=0||km>=totalKm){
+    errEl.textContent=`km muss zwischen 1 und ${totalKm-1} liegen`;
+    errEl.style.display="block";return;
+  }
+  if(stops.some(s=>s.km===km)){
+    errEl.textContent=`Bei km ${km} gibt es bereits einen Stopp`;
+    errEl.style.display="block";return;
+  }
+  errEl.style.display="none";
+
+  const newStop={km,region:region||`km ${km}`,pause,hinweis:"Pause",type:"short"};
+  stops.push(newStop);
+  stops.sort((a,b)=>a.km-b.km);
+  hovIdx=null;
+
+  // suggest next sensible km for convenience
+  document.getElementById("add-km").value=Math.min(km+60,totalKm-1);
+  document.getElementById("add-region").value="";
+  renderAll();
+}
+// ── Project Manager ───────────────────────────────────────────────────────────
+const PROJECT_PREFIX="urp_project_";
+
+function getAllProjects(){
+  const projects=[];
+  try{
+    for(let i=0;i<localStorage.length;i++){
+      const key=localStorage.key(i);
+      if(key&&key.startsWith(PROJECT_PREFIX)){
+        const data=JSON.parse(localStorage.getItem(key)||"{}");
+        projects.push({key,name:data.name||key,savedAt:data.savedAt,km:data.stops?data.stops[data.stops.length-1]?.km:0});
+      }
+    }
+  }catch(e){}
+  return projects.sort((a,b)=>new Date(b.savedAt)-new Date(a.savedAt));
+}
+
+function saveProject(){
+  const nameEl=document.getElementById("project-name-input");
+  const msgEl=document.getElementById("project-save-msg");
+  const name=(nameEl.value||"").trim()||document.getElementById("route-name").textContent||"Unbenannt";
+  const key=PROJECT_PREFIX+Date.now();
+  try{
+    const state={
+      name,routeName:document.getElementById("route-name").textContent,
+      stops,elevGrid,
+      startDate:document.getElementById("start-date").value,
+      startH:document.getElementById("start-h").value,
+      startM:document.getElementById("start-m").value,
+      speed:document.getElementById("speed").value,
+      pauseInterval:document.getElementById("pause-interval").value,
+      savedAt:new Date().toISOString()
+    };
+    localStorage.setItem(key,JSON.stringify(state));
+    nameEl.value="";
+    msgEl.textContent="✓ Gespeichert";msgEl.style.color="#4ade80";msgEl.style.display="block";
+    setTimeout(()=>{msgEl.style.display="none";},2000);
+    renderProjectList();
+  }catch(e){
+    msgEl.textContent="⚠️ Speichern fehlgeschlagen (Speicher voll?)";msgEl.style.color="#f87171";msgEl.style.display="block";
+  }
+}
+
+function loadProject(key){
+  try{
+    const data=JSON.parse(localStorage.getItem(key)||"{}");
+    if(!data.stops) return;
+    stops=data.stops;elevGrid=data.elevGrid||[...BERLIN_ELEV];
+    document.getElementById("route-name").textContent=data.routeName||data.name||"Route";
+    if(data.startDate) document.getElementById("start-date").value=data.startDate;
+    if(data.startH)    document.getElementById("start-h").value=data.startH;
+    if(data.startM)    document.getElementById("start-m").value=data.startM;
+    if(data.speed)     document.getElementById("speed").value=data.speed;
+    if(data.pauseInterval) document.getElementById("pause-interval").value=data.pauseInterval;
+    weatherData=null;
+    document.getElementById("weather-body").innerHTML='<span style="color:var(--text3)">Neu laden für aktuelles Wetter</span>';
+    document.getElementById("poi-body").innerHTML='<span style="color:var(--text3)">Neu laden für Versorgungspunkte</span>';
+    closeProjects();updateWeekday();renderAll();
+  }catch(e){alert("Laden fehlgeschlagen: "+e.message);}
+}
+
+function deleteProject(key,name){
+  if(!confirm(`"${name}" löschen?`)) return;
+  localStorage.removeItem(key);renderProjectList();
+}
+
+function renderProjectList(){
+  const list=document.getElementById("project-list");
+  const projects=getAllProjects();
+  if(!projects.length){
+    list.innerHTML='<div style="color:var(--text3);font-size:13px;text-align:center;padding:24px 0">Noch keine Projekte gespeichert</div>';return;
+  }
+  list.innerHTML=projects.map(p=>{
+    const date=p.savedAt?new Date(p.savedAt).toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit",year:"2-digit",hour:"2-digit",minute:"2-digit"}):"";
+    const safeName=p.name.replace(/'/g,"\\'");
+    return `<div class="project-item" onclick="loadProject('${p.key}')">
+      <div style="font-size:22px;flex-shrink:0">🚴</div>
+      <div style="flex:1;min-width:0">
+        <div class="project-item-name">${p.name}</div>
+        <div class="project-item-meta">${p.km?p.km+" km · ":""}${date}</div>
+      </div>
+      <button class="project-del" onclick="event.stopPropagation();deleteProject('${p.key}','${safeName}')" title="Löschen">🗑</button>
+    </div>`;
+  }).join("");
+}
+
+function openProjects(){
+  const rn=document.getElementById("route-name").textContent;
+  document.getElementById("project-name-input").value=(rn==="Ultra Ride Planner"||rn==="Variante Berlin 2")?"":rn;
+  renderProjectList();
+  document.getElementById("project-overlay").style.display="flex";
+}
+function closeProjects(){document.getElementById("project-overlay").style.display="none";}
+document.getElementById("project-overlay").addEventListener("click",e=>{if(e.target===document.getElementById("project-overlay"))closeProjects();});
+
+// ── GPX Export ────────────────────────────────────────────────────────────────
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+
+function fmtIso(d){
+  return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")
+    +"T"+String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0")+":00Z";
+}
+
+function exportGpx(){
+  const computed=computeSchedule();
+  const name=document.getElementById("route-name").textContent||"Route";
+
+  // find lat/lon for each stop by nearest dist on rawTrackPts or elevGrid fallback
+  function latLonForKm(km){
+    if(rawTrackPts&&rawTrackPts.length){
+      const target=km*1000;
+      let best=Infinity,bi=0;
+      for(let i=0;i<rawTrackPts.length;i++){const d=Math.abs(rawTrackPts[i].dist-target);if(d<best){best=d;bi=i;}}
+      return{lat:rawTrackPts[bi].lat,lon:rawTrackPts[bi].lon,ele:rawTrackPts[bi].ele};
+    }
+    // fallback: use elevation grid km as proxy, no real lat/lon available
+    return null;
+  }
+
+  let gpx=`<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="Tourenplaner" xmlns="http://www.topografix.com/GPX/1/1">
+  <metadata><name>${esc(name)}</name></metadata>\n`;
+
+  // waypoints (POIs) for each stop
+  computed.forEach((s,i)=>{
+    const pos=latLonForKm(s.km);
+    if(!pos)return;
+    const typ=typeOf(s,i,computed);
+    const symMap={start:"Flag, Green",end:"Flag, Red",long:"Parking Area",shop:"Shopping Center",short:"Pin, Blue"};
+    const sym=symMap[typ]||"Pin, Blue";
+    const desc=`${s.hinweis} | Ankunft: ${fmt(s.arrival)}${i>0&&i<stops.length-1?" | Pause: "+s.pause+" Min":""} | Abfahrt: ${i<stops.length-1?fmt(s.departure):"—"}`;
+    gpx+=`  <wpt lat="${pos.lat.toFixed(7)}" lon="${pos.lon.toFixed(7)}">
+    <ele>${pos.ele.toFixed(1)}</ele>
+    <name>${esc(s.region)}</name>
+    <desc>${esc(desc)}</desc>
+    <sym>${sym}</sym>
+    <type>${esc(typ)}</type>
+  </wpt>\n`;
+  });
+
+  // track
+  if(rawTrackPts&&rawTrackPts.length){
+    gpx+=`  <trk><name>${esc(name)}</name><trkseg>\n`;
+    // downsample to max 2000 pts for file size
+    const step=Math.max(1,Math.floor(rawTrackPts.length/2000));
+    for(let i=0;i<rawTrackPts.length;i+=step){
+      const p=rawTrackPts[i];
+      gpx+=`    <trkpt lat="${p.lat.toFixed(7)}" lon="${p.lon.toFixed(7)}"><ele>${p.ele.toFixed(1)}</ele></trkpt>\n`;
+    }
+    gpx+=`  </trkseg></trk>\n`;
+  } else {
+    // no raw track — export only waypoints (still useful)
+  }
+
+  gpx+="</gpx>";
+
+  const blob=new Blob([gpx],{type:"application/gpx+xml"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url;
+  a.download=(name.replace(/\s+/g,"_")||"route")+"_mit_pausen.gpx";
+  document.body.appendChild(a);a.click();
+  setTimeout(()=>{URL.revokeObjectURL(url);a.remove();},1000);
+}
+
+// ── Fertig / Weiterbearbeiten toggle ─────────────────────────────────────────
+let fertigMode=false;
+function toggleFertig(){
+  fertigMode=!fertigMode;
+  const btn=document.getElementById("fertig-btn");
+  const overlay=document.getElementById("fertig-overlay");
+  if(fertigMode){
+    btn.style.background="#ea580c";
+    btn.innerHTML='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Weiterbearbeiten';
+    // fill summary
+    const computed=computeSchedule();
+    const totalKm=stops[stops.length-1].km;
+    const spd=parseFloat(document.getElementById("speed").value)||20;
+    const totalPause=stops.reduce((a,s)=>a+(+s.pause),0);
+    const totalTime=((computed[computed.length-1].arrival-computed[0].arrival)/3600000).toFixed(1);
+    const name=document.getElementById("route-name").textContent;
+    document.getElementById("fertig-title").textContent=name+" – fertig geplant!";
+    document.getElementById("fertig-summary").innerHTML=
+      `<b>Start:</b> ${fmt(computed[0].arrival)}<br>`+
+      `<b>Ankunft:</b> ${fmt(computed[computed.length-1].arrival)}<br>`+
+      `<b>Strecke:</b> ${totalKm} km &nbsp;·&nbsp; <b>Ø</b> ${spd} km/h<br>`+
+      `<b>Fahrzeit:</b> ${(totalKm/spd).toFixed(1)} h &nbsp;·&nbsp; <b>Pausen:</b> ${totalPause} Min<br>`+
+      `<b>Gesamtzeit:</b> ${totalTime} h &nbsp;·&nbsp; <b>Stopps:</b> ${stops.length-2} Pausen`+
+      (rawTrackPts?"":"<br><span style='color:#ea580c;font-size:11px'>⚠ Kein GPX importiert – Export enthält nur Wegpunkte</span>");
+    document.getElementById("export-note").textContent=rawTrackPts
+      ?"Track + "+( stops.length-2)+" POI-Wegpunkte werden exportiert"
+      :"Nur Wegpunkte (kein Track) – GPX vorher importieren für vollständige Route";
+    overlay.style.display="flex";
+  } else {
+    btn.style.background="#16a34a";
+    btn.innerHTML='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Fertig';
+    overlay.style.display="none";
+  }
+}
+
+document.getElementById("fertig-btn").onclick=toggleFertig;
+
+// ── Events ────────────────────────────────────────────────────────────────────
+document.getElementById("gpx-btn").onclick=()=>document.getElementById("gpx-file").click();
+document.getElementById("gpx-file").onchange=e=>{
+  const f=e.target.files?.[0];if(!f)return;
+  const btn=document.getElementById("gpx-btn");
+  btn.textContent="Lädt…";btn.disabled=true;
+  const r=new FileReader();
+  r.onload=ev=>{
+    try{
+      const res=parseGpx(ev.target.result);
+      elevGrid=res.grid;stops=res.stops;hovIdx=null;rawTrackPts=res.raw;
+      document.getElementById("route-name").textContent=res.trackName;
+      document.getElementById("gpx-err").style.display="none";
+      renderAll();
+    }catch(err){
+      const el=document.getElementById("gpx-err");el.textContent=err.message;el.style.display="block";
+    }finally{
+      btn.innerHTML='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> GPX importieren';
+      btn.disabled=false;e.target.value="";
+    }
+  };
+  r.readAsText(f);
+};
+
+// ── Difficulty Score ──────────────────────────────────────────────────────────
+function difficultyScore(km1, km2){
+  const pts = elevGrid.filter(([k])=>k>=km1&&k<=km2);
+  if(pts.length<2) return {score:1,stars:"★",label:"leicht",uphillM:0};
+  let uphill=0;
+  for(let i=1;i<pts.length;i++){
+    const diff=pts[i][1]-pts[i-1][1];
+    if(diff>0) uphill+=diff;
+  }
+  const ratio=uphill/Math.max(km2-km1,1);
+  let score,stars,label;
+  if(ratio<5){score=1;stars="★";label="leicht";}
+  else if(ratio<10){score=2;stars="★★";label="moderat";}
+  else if(ratio<15){score=3;stars="★★★";label="anspruchsvoll";}
+  else if(ratio<22){score=4;stars="★★★★";label="schwer";}
+  else{score=5;stars="★★★★★";label="extrem";}
+  return{score,stars,label,uphillM:Math.round(uphill)};
+}
+
+function totalElevation(){
+  let up=0,down=0;
+  for(let i=1;i<elevGrid.length;i++){
+    const d=elevGrid[i][1]-elevGrid[i-1][1];
+    if(d>0)up+=d; else down+=-d;
+  }
+  return{up:Math.round(up),down:Math.round(down)};
+}
+
+// ── LocalStorage ──────────────────────────────────────────────────────────────
+function saveState(){
+  try{
+    const state={
+      routeName:document.getElementById("route-name").textContent,
+      stops,
+      elevGrid,
+      startDate:document.getElementById("start-date").value,
+      startH:document.getElementById("start-h").value,
+      startM:document.getElementById("start-m").value,
+      speed:document.getElementById("speed").value,
+      pauseInterval:document.getElementById("pause-interval").value,
+      savedAt:new Date().toISOString()
+    };
+    localStorage.setItem("tourenplaner_state",JSON.stringify(state));
+  }catch(e){console.warn("Save failed:",e);}
+}
+
+function loadState(){
+  try{
+    const raw=localStorage.getItem("tourenplaner_state");
+    if(!raw)return false;
+    const state=JSON.parse(raw);
+    document.getElementById("route-name").textContent=state.routeName||"Tourenplaner";
+    stops=state.stops||BERLIN_STOPS.map(s=>({...s}));
+    elevGrid=state.elevGrid||[...BERLIN_ELEV];
+    if(state.startDate)document.getElementById("start-date").value=state.startDate;
+    if(state.startH)document.getElementById("start-h").value=state.startH;
+    if(state.startM)document.getElementById("start-m").value=state.startM;
+    if(state.speed)document.getElementById("speed").value=state.speed;
+    if(state.pauseInterval)document.getElementById("pause-interval").value=state.pauseInterval;
+    return true;
+  }catch(e){console.warn("Load failed:",e);return false;}
+}
+
+function clearState(){
+  try{localStorage.removeItem("tourenplaner_state");}catch(e){}
+}
+
+function renderAll(){
+  const computed=computeSchedule();
+  drawChart(computed);
+  renderTable(computed);
+  renderSummary(computed);
+  renderWarnings(computed);
+  if(weatherData)renderWeather(computed);
+  saveState();
+}
+
+["start-h","start-m","speed","start-date"].forEach(id=>document.getElementById(id).addEventListener("input",()=>{updateWeekday();renderAll();}));
+window.addEventListener("resize",renderAll);
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+const restored=loadState();
+if(!restored){// use berlin defaults already set
+}
+updateWeekday();
+renderAll();
+</script>
+</body>
+</html>
