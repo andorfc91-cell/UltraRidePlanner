@@ -858,20 +858,45 @@ const POI_ICONS={
 const POI_PRIORITY={supermarket:5,bakery:4,deli:3,convenience:3,kiosk:2,fuel:2,drinking_water:1};
 
 function distToTrack(lat,lon){
+  if(!rawTrackPts||!rawTrackPts.length)return 0;
   let best=Infinity;
-  const step=Math.max(1,Math.floor(rawTrackPts.length/500));
+  // Check every point for accuracy on long diagonal routes
+  const step=Math.max(1,Math.floor(rawTrackPts.length/2000));
   for(let i=0;i<rawTrackPts.length;i+=step){
-    const p=rawTrackPts[i],d=Math.sqrt((lat-p.lat)**2+(lon-p.lon)**2)*111000;
+    const p=rawTrackPts[i];
+    // fast pre-filter: skip if lat/lon diff > 0.02 degrees (~2km)
+    if(Math.abs(lat-p.lat)>0.02||Math.abs(lon-p.lon)>0.02)continue;
+    const d=Math.sqrt((lat-p.lat)**2+(lon-p.lon)**2)*111000;
     if(d<best)best=d;
+  }
+  // If best is still Infinity (pre-filter too aggressive), do full check
+  if(best===Infinity){
+    const step2=Math.max(1,Math.floor(rawTrackPts.length/1000));
+    for(let i=0;i<rawTrackPts.length;i+=step2){
+      const p=rawTrackPts[i];
+      const d=Math.sqrt((lat-p.lat)**2+(lon-p.lon)**2)*111000;
+      if(d<best)best=d;
+    }
   }
   return best;
 }
 function kmOnTrack(lat,lon){
+  if(!rawTrackPts||!rawTrackPts.length)return 0;
   let best=Infinity,bkm=0;
-  const step=Math.max(1,Math.floor(rawTrackPts.length/500));
+  const step=Math.max(1,Math.floor(rawTrackPts.length/2000));
   for(let i=0;i<rawTrackPts.length;i+=step){
-    const p=rawTrackPts[i],d=Math.sqrt((lat-p.lat)**2+(lon-p.lon)**2);
+    const p=rawTrackPts[i];
+    if(Math.abs(lat-p.lat)>0.05||Math.abs(lon-p.lon)>0.05)continue;
+    const d=Math.sqrt((lat-p.lat)**2+(lon-p.lon)**2);
     if(d<best){best=d;bkm=p.dist/1000;}
+  }
+  if(best===Infinity){
+    const step2=Math.max(1,Math.floor(rawTrackPts.length/1000));
+    for(let i=0;i<rawTrackPts.length;i+=step2){
+      const p=rawTrackPts[i];
+      const d=Math.sqrt((lat-p.lat)**2+(lon-p.lon)**2);
+      if(d<best){best=d;bkm=p.dist/1000;}
+    }
   }
   return Math.round(bkm);
 }
@@ -927,14 +952,17 @@ function renderPois(elements){
   const computed=computeSchedule();
   const totalKm=stops[stops.length-1].km;
   const spd=Math.max(1,parseFloat(document.getElementById("speed").value)||20);
-  if(!elements.length){body.innerHTML='<div style="color:var(--text3);font-size:12px">Keine Versorgungspunkte gefunden</div>';return;}
-  const pois=elements.filter(e=>e.lat&&e.lon).map(e=>{
+  if(!elements.length){body.innerHTML='<div style="color:var(--text3);font-size:12px">Keine Versorgungspunkte in der Bounding Box gefunden</div>';return;}
+  const allPois=elements.filter(e=>e.lat&&e.lon).map(e=>{
     const t=e.tags||{};const type=t.shop||t.amenity||"?";
     const km=kmOnTrack(e.lat,e.lon);const arrival=timeAtKm(km,computed);
     const status=openStatus(t,arrival);
     return{name:t.name||(POI_ICONS[type]||"?"),type,icon:POI_ICONS[type]||"📍",priority:POI_PRIORITY[type]||1,km,arrival,status,oh:t["opening_hours"]||"",dist:distToTrack(e.lat,e.lon)};
-  }).filter(p=>p.dist<400).sort((a,b)=>a.km-b.km);
-  if(!pois.length){body.innerHTML='<div style="color:var(--text3);font-size:12px">Keine Punkte innerhalb 400m der Route</div>';return;}
+  });
+  const pois=allPois.filter(p=>p.dist<600).sort((a,b)=>a.km-b.km);
+  if(!pois.length){
+    body.innerHTML=`<div style="color:var(--text3);font-size:12px">Keine Punkte innerhalb 600m der Route (${allPois.length} in der Region gefunden — Route evtl. zu weit entfernt)</div>`;return;
+  }
 
   // Critical gaps
   const openPois=pois.filter(p=>p.status.open!==false&&p.type!=="drinking_water");
