@@ -211,7 +211,7 @@ td input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
     <table id="main-table">
       <thead>
         <tr>
-          <th></th><th>#</th><th style="width:24px"></th><th>Region / Ort</th><th>km</th><th>↑</th><th>Ankunft</th><th>Pause</th><th>Abfahrt</th><th>Hinweis</th>
+          <th></th><th>#</th><th>Region / Ort</th><th>km</th><th>↑</th><th>Ankunft</th><th>Pause</th><th>Abfahrt</th><th>Hinweis</th>
         </tr>
       </thead>
       <tbody id="tbl-body"></tbody>
@@ -243,10 +243,11 @@ td input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
 <div class="legend">
   <span><span class="dot" style="background:#38bdf8"></span>☀️ Tag</span>
   <span><span class="dot" style="background:#475569"></span>🌙 Nacht</span>
-  <span><span class="dot" style="background:var(--green)"></span>Versorgung ok</span>
-  <span><span class="dot" style="background:var(--accent)"></span>Versorgung knapp</span>
-  <span><span class="dot" style="background:var(--red)"></span>Versorgung kritisch</span>
-  <span><span class="dot" style="background:#94a3b8"></span>Nacht (Ampel)</span>
+  <span style="color:var(--text3);font-size:10px;margin-left:4px">km-Farbe: </span>
+  <span><span class="dot" style="background:#22c55e"></span>ok</span>
+  <span><span class="dot" style="background:#f59e0b"></span>knapp</span>
+  <span><span class="dot" style="background:#ef4444"></span>kritisch</span>
+  <span><span class="dot" style="background:#94a3b8"></span>Nacht</span>
 </div>
 
 <!-- Project Manager Overlay -->
@@ -1025,9 +1026,8 @@ function renderTable(computed){
     if(stopW.some(w=>w.level==="red"))ampelColor="#ef4444";
     else if(stopW.some(w=>w.level==="orange")&&ampelColor==="#22c55e")ampelColor="#f59e0b";
 
-    const ampelCell=ampelColor
-      ?`<td style="width:24px;text-align:center;padding:0 4px"><span style="display:inline-block;width:13px;height:13px;border-radius:50%;background:${ampelColor};flex-shrink:0" title="${ampelTitle||""}"></span></td>`
-      :`<td style="width:24px"></td>`;
+    // km text gets the ampel color — no separate dot column needed
+    const kmColor=isF||isL?"#64748b":(ampelColor||"#64748b");
 
     // row bg: align with chart colors
     let rowBg=i%2===1?"rgba(30,41,59,0.5)":"transparent";
@@ -1072,9 +1072,11 @@ function renderTable(computed){
     tr.innerHTML=`
       ${delBtn}
       <td style="color:#94a3b8;font-size:11px;text-align:center;padding:0 4px">${i+1}</td>
-      ${ampelCell}
-      <td><input type="text" value="${s.region}" style="color:${col}" data-i="${i}" data-f="region"/>${resupplyBadge}${warnBadges}</td>
-      <td>${isF||isL?`<span style="font-family:monospace;color:#64748b">${s.km}</span>`:`<input type="number" value="${s.km}" min="0" max="${stops[stops.length-1].km}" step="1" data-i="${i}" data-f="km"/>`}</td>
+      <td><input type="text" value="${s.region}" style="color:${kmColor};font-weight:${isF||isL?'700':'600'}" data-i="${i}" data-f="region"/>${resupplyBadge}${warnBadges}</td>
+      <td style="white-space:nowrap">${isF||isL
+        ?`<span style="font-family:monospace;color:#64748b">${s.km}</span>`
+        :`<input type="number" value="${s.km}" min="0" max="${stops[stops.length-1].km}" step="1" data-i="${i}" data-f="km"/>`
+      }</td>
       ${diffCell}
       <td style="font-family:monospace;white-space:nowrap;font-size:12px">${fmt(s.arrival)}</td>
       <td>${isF||isL?`<span style="color:#94a3b8">—</span>`:`<input type="number" value="${s.pause}" min="0" max="240" step="5" data-i="${i}" data-f="pause"/>`}</td>
