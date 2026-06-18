@@ -643,51 +643,66 @@ const WX_ICON={0:"☀️",1:"🌤",2:"⛅",3:"☁️",45:"🌫",48:"🌫",51:"�
   95:"⛈",96:"⛈",99:"⛈"};
 
 function getWxForTime(date){
-  if(!weatherData)return null;
+  if(!weatherData?.hourly)return null;
   const h=weatherData.hourly;
-  const iso=date.toISOString().slice(0,13); // "2026-04-10T05"
-  // Open-Meteo times are in local time — match by date+hour string
   const localStr=date.getFullYear()+"-"+String(date.getMonth()+1).padStart(2,"0")+"-"+
     String(date.getDate()).padStart(2,"0")+"T"+String(date.getHours()).padStart(2,"0");
   const idx=h.time.findIndex(t=>t.startsWith(localStr));
   if(idx<0)return null;
+  const temp=h.temperature_2m?.[idx];
+  const precip=h.precipitation_probability?.[idx];
+  const wind=h.windspeed_10m?.[idx];
+  const code=h.weathercode?.[idx];
+  if(temp==null)return null;
   return{
-    temp:Math.round(h.temperature_2m[idx]),
-    precip:h.precipitation_probability[idx],
-    wind:Math.round(h.windspeed_10m[idx]),
-    code:h.weathercode[idx]
+    temp:Math.round(temp),
+    precip:precip!=null?Math.round(precip):null,
+    wind:wind!=null?Math.round(wind):null,
+    code:code??0
   };
 }
 
 function renderWeather(computed){
   const el=document.getElementById("weather-body");
-  if(!weatherData){el.innerHTML='<span style="color:#94a3b8">Noch nicht geladen</span>';return;}
+  if(!weatherData){el.innerHTML='<span style="color:var(--text3)">Noch nicht geladen</span>';return;}
 
-  let html='<div style="overflow-x:auto"><table style="width:100%;font-size:12px;border-collapse:collapse;min-width:400px">';
-  html+='<tr style="background:var(--bg)"><th style="padding:6px 8px;text-align:left;font-weight:700;color:var(--text3)">Stopp</th>'+
-    '<th style="padding:6px 8px;text-align:center">Zeit</th>'+
-    '<th style="padding:6px 8px;text-align:center">Wetter</th>'+
-    '<th style="padding:6px 8px;text-align:center">Temp</th>'+
-    '<th style="padding:6px 8px;text-align:center">Regen%</th>'+
-    '<th style="padding:6px 8px;text-align:center">Wind</th></tr>';
+  // Check if any data actually came back
+  const hasData=weatherData.hourly?.temperature_2m?.some(v=>v!=null);
+  const dateStr=document.getElementById("start-date").value||"";
+  const today=new Date();
+  const startDate=new Date(dateStr);
+  const daysDiff=Math.round((startDate-today)/(1000*60*60*24));
+  let warning="";
+  if(daysDiff>16){
+    warning=`<div style="background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.25);border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:12px;color:#fbbf24">⚠️ Startdatum liegt ${daysDiff} Tage in der Zukunft — Open-Meteo liefert max. 16 Tage Vorhersage. Daten können fehlen.</div>`;
+  }else if(!hasData){
+    warning=`<div style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:12px;color:#f87171">⚠️ Keine Wetterdaten für diesen Zeitraum verfügbar.</div>`;
+  }
+
+  let html=warning+'<div style="overflow-x:auto"><table style="width:100%;font-size:12px;border-collapse:collapse;min-width:380px">';
+  html+='<tr style="background:var(--bg)"><th style="padding:6px 8px;text-align:left;color:var(--text3)">Stopp</th>'+
+    '<th style="padding:6px 8px;text-align:center;color:var(--text3)">Zeit</th>'+
+    '<th style="padding:6px 8px;text-align:center;color:var(--text3)">Wetter</th>'+
+    '<th style="padding:6px 8px;text-align:center;color:var(--text3)">Temp</th>'+
+    '<th style="padding:6px 8px;text-align:center;color:var(--text3)">Regen%</th>'+
+    '<th style="padding:6px 8px;text-align:center;color:var(--text3)">Wind</th></tr>';
 
   computed.forEach((s,i)=>{
     const wx=getWxForTime(s.arrival);
     const icon=wx?(WX_ICON[wx.code]||"🌡"):"—";
     const dark=isDark(s.arrival);
-    const bg=dark?"rgba(71,85,105,0.2)":"transparent";
-    const tc=dark?"var(--text2)":"var(--text)";
-    html+=`<tr style="background:${bg};color:${tc}">
-      <td style="padding:6px 8px;font-weight:600">${s.region}${dark?" 🌙":""}</td>
-      <td style="padding:6px 8px;text-align:center;font-family:monospace">${fmt(s.arrival)}</td>
-      <td style="padding:6px 8px;text-align:center;font-size:16px">${icon}</td>
-      <td style="padding:6px 8px;text-align:center">${wx?wx.temp+"°":"—"}</td>
-      <td style="padding:6px 8px;text-align:center">${wx?wx.precip+"%":"—"}</td>
-      <td style="padding:6px 8px;text-align:center">${wx?wx.wind+" km/h":"—"}</td>
+    const bg=dark?"rgba(71,85,105,0.15)":"transparent";
+    html+=`<tr style="background:${bg};border-bottom:1px solid rgba(51,65,85,.3)">
+      <td style="padding:7px 8px;font-weight:600;color:var(--text)">${s.region}${dark?"  🌙":""}</td>
+      <td style="padding:7px 8px;text-align:center;font-family:monospace;color:var(--text2)">${fmt(s.arrival)}</td>
+      <td style="padding:7px 8px;text-align:center;font-size:16px">${icon}</td>
+      <td style="padding:7px 8px;text-align:center;color:var(--text)">${wx?wx.temp+"°":"—"}</td>
+      <td style="padding:7px 8px;text-align:center;color:${wx?.precip!=null?(wx.precip>50?"#f87171":wx.precip>20?"#fbbf24":"var(--text)"):"var(--text3)"}">${wx?.precip!=null?wx.precip+"%":"—"}</td>
+      <td style="padding:7px 8px;text-align:center;color:${wx?.wind!=null?(wx.wind>40?"#f87171":wx.wind>20?"#fbbf24":"var(--text)"):"var(--text3)"}">${wx?.wind!=null?wx.wind+" km/h":"—"}</td>
     </tr>`;
   });
   html+="</table></div>";
-  html+='<div style="font-size:10px;color:#94a3b8;margin-top:6px">Quelle: Open-Meteo · Vorhersage max. 16 Tage · 🌙 = Nachtfahrt</div>';
+  html+='<div style="font-size:10px;color:var(--text3);margin-top:8px">Quelle: Open-Meteo · max. 16 Tage Vorhersage · 🌙 = Nacht</div>';
   el.innerHTML=html;
 }
 
@@ -873,18 +888,36 @@ async function loadPois(){
   const btn=document.getElementById("poi-btn");
   btn.textContent="⏳ Lädt…";btn.disabled=true;
   document.getElementById("poi-body").innerHTML='<div style="color:var(--text3);font-size:12px;padding:8px 0">🔍 Suche Supermärkte, Bäckereien, Tankstellen…</div>';
-  const step=Math.max(1,Math.floor(rawTrackPts.length/130));
-  const poly=[];
-  for(let i=0;i<rawTrackPts.length;i+=step) poly.push(`${rawTrackPts[i].lat.toFixed(5)} ${rawTrackPts[i].lon.toFixed(5)}`);
-  const polyStr=poly.join(" ");
-  const query=`[out:json][timeout:30];(node["shop"~"^(supermarket|convenience|bakery|deli|kiosk)$"](around:400,${polyStr});node["amenity"="fuel"](around:400,${polyStr});node["amenity"="drinking_water"](around:400,${polyStr}););out body;`;
+
+  // Use bbox + post-filter by distance — avoids polyline length limit
+  const lats=rawTrackPts.map(p=>p.lat);
+  const lons=rawTrackPts.map(p=>p.lon);
+  const minLat=(Math.min(...lats)-0.04).toFixed(5);
+  const maxLat=(Math.max(...lats)+0.04).toFixed(5);
+  const minLon=(Math.min(...lons)-0.04).toFixed(5);
+  const maxLon=(Math.max(...lons)+0.04).toFixed(5);
+  const bbox=`${minLat},${minLon},${maxLat},${maxLon}`;
+
+  const query=`[out:json][timeout:30];
+(
+  node["shop"~"^(supermarket|convenience|bakery|deli|kiosk)$"](${bbox});
+  node["amenity"="fuel"](${bbox});
+  node["amenity"="drinking_water"](${bbox});
+);
+out body;`;
+
   try{
-    const res=await fetch("https://overpass-api.de/api/interpreter",{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:"data="+encodeURIComponent(query)});
+    const res=await fetch("https://overpass-api.de/api/interpreter",{
+      method:"POST",
+      headers:{"Content-Type":"application/x-www-form-urlencoded"},
+      body:"data="+encodeURIComponent(query)
+    });
     if(!res.ok) throw new Error(`HTTP ${res.status}`);
     const data=await res.json();
     renderPois(data.elements||[]);
   }catch(e){
-    document.getElementById("poi-body").innerHTML=`<div style="color:#f87171;font-size:13px">⚠️ ${e.message}<br><span style="font-size:11px;color:var(--text3)">Funktioniert auf GitHub Pages. In der Claude-App ist CORS geblockt.</span></div>`;
+    document.getElementById("poi-body").innerHTML=
+      `<div style="color:#f87171;font-size:13px">⚠️ ${e.message}</div>`;
   }finally{btn.textContent="🔍 Neu laden";btn.disabled=false;}
 }
 
