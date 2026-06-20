@@ -768,25 +768,6 @@ function renderWarnings(computed){
   // Warnungen werden inline in der Tabelle angezeigt, kein separater Block
 }
 
-function resupplyStatus(date){
-  const day=date.getDay();
-  const h=date.getHours()+date.getMinutes()/60;
-  const nextDay=new Date(date); nextDay.setDate(nextDay.getDate()+1);
-  const nextIsSunday=nextDay.getDay()===0;
-
-  if(day===0)       return{open:false,show:true, icon:"🚫",label:"Sonntag"};
-  if(h>=20)         return{open:false,show:true, icon:"🔒",label:"Läden zu"};
-  if(h>=6&&h<7)     return{open:false,show:true, icon:"⏳",label:"Öffnet bald"};
-  if(h<6)           return{open:false,show:true, icon:"🌙",label:"Nacht"};
-  if(h>=17&&h<20){
-    const m=Math.round((20-h)*60);
-    if(nextIsSunday) return{open:true,show:true, icon:"⚠️",label:`${m} Min · So!`};
-    return{open:true,show:true, icon:"⏱",label:`${m} Min`};
-  }
-  if(nextIsSunday&&h>=14) return{open:true,show:true, icon:"📅",label:"Morgen So!"};
-  return{open:true,show:false,icon:"",label:""};
-}
-
 function getStopWarnings(s,i,computed){
   const warnings=[];
   const isL=i===computed.length-1;
@@ -971,20 +952,44 @@ async function loadPois(){
   btn.textContent="⏳ Lädt…";btn.disabled=true;
   document.getElementById("poi-body").innerHTML='<div style="color:var(--text3);font-size:12px;padding:8px 0">🔍 Suche Supermärkte, Bäckereien, Tankstellen…</div>';
 
-  // Use bbox + post-filter by distance — avoids polyline length limit
-  const lats=rawTrackPts.map(p=>p.lat);
-  const lons=rawTrackPts.map(p=>p.lon);
-  const minLat=(Math.min(...lats)-0.04).toFixed(5);
-  const maxLat=(Math.max(...lats)+0.04).toFixed(5);
-  const minLon=(Math.min(...lons)-0.04).toFixed(5);
-  const maxLon=(Math.max(...lons)+0.04).toFixed(5);
-  const bbox=`${minLat},${minLon},${maxLat},${maxLon}`;
+  const computed=computeSchedule();
+  // Skip start (i=0) — usually no resupply needed right at departure
+  const queryStops=computed.filter((s,i)=>i>0);
+
+  // Build one Overpass query with multiple around() clauses — one per stop.
+  // Base radius 4km. Critical stops (last resupply before night, before Sunday,
+  // or marked "knapp"/"kritisch" by resupplyStatus) get an extended radius.
+  const clauses=[];
+  queryStops.forEach((s,idx)=>{
+    const i=computed.indexOf(s);
+    const rs=resupplyStatus(s.arrival);
+    const isLast=i===computed.length-1;
+    const nextDark=!isLast&&isDark(computed[i+1].arrival);
+    const curDark=isDark(s.arrival);
+    const isLastBeforeNight=rs.open&&!rs.show&&nextDark&&!curDark;
+    const isCritical=isLastBeforeNight||(rs.show&&(!rs.open||rs.label.includes("So")));
+    const radius=isCritical?8000:4000; // meters
+    clauses.push({km:s.km,radius,isCritical});
+  });
+
+  // get actual coords for each stop km
+  function posForKm(km){
+    const target=km*1000;let best=Infinity,bi=0;
+    for(let i=0;i<rawTrackPts.length;i++){const d=Math.abs(rawTrackPts[i].dist-target);if(d<best){best=d;bi=i;}}
+    return rawTrackPts[bi];
+  }
+
+  let aroundClauses="";
+  clauses.forEach(c=>{
+    const pos=posForKm(c.km);
+    aroundClauses+=`
+  node["shop"~"^(supermarket|convenience|bakery|deli|kiosk)$"](around:${c.radius},${pos.lat.toFixed(5)},${pos.lon.toFixed(5)});
+  node["amenity"="fuel"](around:${c.radius},${pos.lat.toFixed(5)},${pos.lon.toFixed(5)});
+  node["amenity"="drinking_water"](around:${c.radius},${pos.lat.toFixed(5)},${pos.lon.toFixed(5)});`;
+  });
 
   const query=`[out:json][timeout:30];
-(
-  node["shop"~"^(supermarket|convenience|bakery|deli|kiosk)$"](${bbox});
-  node["amenity"="fuel"](${bbox});
-  node["amenity"="drinking_water"](${bbox});
+(${aroundClauses}
 );
 out body;`;
 
@@ -996,10 +1001,15 @@ out body;`;
     });
     if(!res.ok) throw new Error(`HTTP ${res.status}`);
     const data=await res.json();
-    // auto-open poi section
+    // dedupe by node id (a POI can match multiple around() clauses if stops are close)
+    const seen=new Set();
+    const unique=(data.elements||[]).filter(e=>{
+      if(seen.has(e.id))return false;
+      seen.add(e.id);return true;
+    });
     const pb=document.getElementById("body-poi");
     if(pb&&pb.classList.contains("closed"))toggleSec("poi");
-    renderPois(data.elements||[]);
+    renderPois(unique);
   }catch(e){
     document.getElementById("poi-body").innerHTML=
       `<div style="color:#f87171;font-size:13px">⚠️ ${e.message}</div>`;
@@ -1018,7 +1028,7 @@ function renderPois(elements){
     const status=openStatus(t,arrival);
     return{name:t.name||(POI_ICONS[type]||"?"),type,icon:POI_ICONS[type]||"📍",priority:POI_PRIORITY[type]||1,km,arrival,status,oh:t["opening_hours"]||"",dist:distToTrack(e.lat,e.lon)};
   });
-  const pois=allPois.filter(p=>p.dist<600).sort((a,b)=>a.km-b.km);
+  const pois=allPois.filter(p=>p.dist<8500).sort((a,b)=>a.km-b.km);
   if(!pois.length){
     body.innerHTML=`<div style="color:var(--text3);font-size:12px">Keine Punkte innerhalb 600m der Route (${allPois.length} in der Region gefunden — Route evtl. zu weit entfernt)</div>`;return;
   }
