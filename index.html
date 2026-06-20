@@ -638,8 +638,19 @@ function resupplyStatus(date){
   return{open:true,show:false,icon:"",label:""};
 }
 
-// ── Weather (Open-Meteo, no API key) ─────────────────────────────────────────
-let weatherData=null;
+// ── Weather (Open-Meteo, no API key) — now per-stop along the route ──────────
+let weatherData=null; // { byStopKm: { km: {hourly...} } }
+
+function coordsForKm(km){
+  if(!rawTrackPts||!rawTrackPts.length)return null;
+  const target=km*1000;
+  let best=Infinity,bi=0;
+  for(let i=0;i<rawTrackPts.length;i++){
+    const d=Math.abs(rawTrackPts[i].dist-target);
+    if(d<best){best=d;bi=i;}
+  }
+  return{lat:rawTrackPts[bi].lat,lon:rawTrackPts[bi].lon};
+}
 
 async function loadWeather(){
   if(!rawTrackPts||!rawTrackPts.length){
@@ -649,21 +660,27 @@ async function loadWeather(){
   const btn=document.getElementById("weather-btn");
   btn.textContent="⏳ Lädt…";btn.disabled=true;
 
-  // use start point coords
-  const p=rawTrackPts[0];
   const dateStr=document.getElementById("start-date").value||"2026-04-10";
   const computed=computeSchedule();
   const endDate=computed[computed.length-1].arrival;
   const endStr=endDate.toISOString().split("T")[0];
 
+  // Fetch weather at each stop's own coordinates (not just start point)
+  const results={};
   try{
-    const url=`https://api.open-meteo.com/v1/forecast?latitude=${p.lat.toFixed(4)}&longitude=${p.lon.toFixed(4)}`+
-      `&hourly=temperature_2m,precipitation_probability,windspeed_10m,weathercode`+
-      `&start_date=${dateStr}&end_date=${endStr}&timezone=Europe%2FBerlin`;
-    const res=await fetch(url);
-    const data=await res.json();
-    weatherData=data;
-    // auto-open weather section
+    const fetches=computed.map(async (s)=>{
+      const pos=coordsForKm(s.km);
+      if(!pos)return;
+      const url=`https://api.open-meteo.com/v1/forecast?latitude=${pos.lat.toFixed(4)}&longitude=${pos.lon.toFixed(4)}`+
+        `&hourly=temperature_2m,precipitation_probability,windspeed_10m,weathercode`+
+        `&start_date=${dateStr}&end_date=${endStr}&timezone=Europe%2FBerlin`;
+      const res=await fetch(url);
+      if(!res.ok)return;
+      const data=await res.json();
+      results[s.km]={hourly:data.hourly,lat:pos.lat,lon:pos.lon};
+    });
+    await Promise.all(fetches);
+    weatherData={byStopKm:results};
     const wb=document.getElementById("body-weather");
     if(wb&&wb.classList.contains("closed"))toggleSec("weather");
     renderWeather(computed);
@@ -678,9 +695,13 @@ const WX_ICON={0:"☀️",1:"🌤",2:"⛅",3:"☁️",45:"🌫",48:"🌫",51:"�
   61:"🌧",63:"🌧",65:"🌧",71:"❄️",73:"❄️",75:"❄️",80:"🌦",81:"🌧",82:"⛈",
   95:"⛈",96:"⛈",99:"⛈"};
 
-function getWxForTime(date){
-  if(!weatherData?.hourly)return null;
-  const h=weatherData.hourly;
+// Get weather for a specific stop using that stop's own forecast data
+function getWxForStop(s){
+  if(!weatherData?.byStopKm)return null;
+  const entry=weatherData.byStopKm[s.km];
+  if(!entry?.hourly)return null;
+  const h=entry.hourly;
+  const date=s.arrival;
   const localStr=date.getFullYear()+"-"+String(date.getMonth()+1).padStart(2,"0")+"-"+
     String(date.getDate()).padStart(2,"0")+"T"+String(date.getHours()).padStart(2,"0");
   const idx=h.time.findIndex(t=>t.startsWith(localStr));
@@ -702,8 +723,8 @@ function renderWeather(computed){
   const el=document.getElementById("weather-body");
   if(!weatherData){el.innerHTML='<span style="color:var(--text3)">Noch nicht geladen</span>';return;}
 
-  // Check if any data actually came back
-  const hasData=weatherData.hourly?.temperature_2m?.some(v=>v!=null);
+  // Check if any data actually came back across all stop fetches
+  const hasData=Object.values(weatherData.byStopKm||{}).some(e=>e.hourly?.temperature_2m?.some(v=>v!=null));
   const dateStr=document.getElementById("start-date").value||"";
   const today=new Date();
   const startDate=new Date(dateStr);
@@ -724,7 +745,7 @@ function renderWeather(computed){
     '<th style="padding:6px 8px;text-align:center;color:var(--text3)">Wind</th></tr>';
 
   computed.forEach((s,i)=>{
-    const wx=getWxForTime(s.arrival);
+    const wx=getWxForStop(s);
     const icon=wx?(WX_ICON[wx.code]||"🌡"):"—";
     const dark=isDark(s.arrival);
     const bg=dark?"rgba(71,85,105,0.15)":"transparent";
@@ -738,7 +759,7 @@ function renderWeather(computed){
     </tr>`;
   });
   html+="</table></div>";
-  html+='<div style="font-size:10px;color:var(--text3);margin-top:8px">Quelle: Open-Meteo · max. 16 Tage Vorhersage · 🌙 = Nacht</div>';
+  html+='<div style="font-size:10px;color:var(--text3);margin-top:8px">Quelle: Open-Meteo · Wetter pro Stopp einzeln abgefragt · max. 16 Tage Vorhersage · 🌙 = Nacht</div>';
   el.innerHTML=html;
 }
 
