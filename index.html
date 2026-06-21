@@ -132,10 +132,6 @@ td input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
     <button onclick="if(confirm('Gespeicherten Stand löschen?')){clearState();location.reload();}" style="margin-top:6px;background:none;border:none;font-size:10px;color:var(--text3);cursor:pointer;padding:0;font-family:inherit">↺ Neu starten</button>
   </div>
   <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end">
-    <button onclick="openEmergencySupply()" style="display:flex;align-items:center;gap:7px;background:linear-gradient(135deg,#ef4444,#dc2626);border:none;border-radius:10px;padding:11px 16px;font-size:13px;font-weight:800;color:#fff;cursor:pointer;font-family:inherit;box-shadow:0 4px 14px rgba(239,68,68,.35);letter-spacing:.02em">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-      Jetzt Versorgung finden
-    </button>
     <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
       <button class="btn btn-primary" id="gpx-btn">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
@@ -241,6 +237,10 @@ td input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
       <span class="chev" id="chev-poi">▾</span>
     </div>
   </div>
+  <button onclick="openEmergencySupply()" style="display:flex;align-items:center;justify-content:center;gap:7px;width:100%;background:linear-gradient(135deg,#ef4444,#dc2626);border:none;border-radius:10px;padding:11px 16px;font-size:13px;font-weight:800;color:#fff;cursor:pointer;font-family:inherit;box-shadow:0 4px 14px rgba(239,68,68,.3);letter-spacing:.02em;margin-top:10px">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    Jetzt Versorgung finden
+  </button>
   <div class="sec-body closed" id="body-poi" style="max-height:0;margin-top:10px">
     <div id="poi-filters" style="display:none;flex-wrap:wrap;gap:6px;margin-bottom:12px"></div>
     <div id="poi-body" style="font-size:12px;color:var(--text3)">GPX importieren, dann Laden antippen</div>
