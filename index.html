@@ -127,7 +127,7 @@ td input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
 <body>
 <div style="max-width:900px;margin:0 auto;padding:16px 14px">
 
-<div style="display:flex;justify-content:center;margin-bottom:14px">
+<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">
   <div style="display:inline-flex;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:4px">
     <button id="mode-plan-btn" onclick="setAppMode('plan')" style="display:flex;align-items:center;gap:6px;padding:9px 18px;border:none;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;background:var(--accent2);color:#fff">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
@@ -138,6 +138,16 @@ td input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
       Fahren
     </button>
   </div>
+  <button class="btn" style="background:var(--surface2);border:1px solid var(--border)" onclick="openProjects()">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+    Projekte
+  </button>
+</div>
+
+<div style="margin-bottom:14px">
+  <div style="font-size:10px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.15em;margin-bottom:4px">🚴 Ultra Ride Planner</div>
+  <h1 id="route-name" style="font-size:19px">Variante Berlin 2</h1>
+  <div class="sub" id="route-sub">654 km · wird berechnet…</div>
 </div>
 
 <div id="ride-hero" class="card" style="background:linear-gradient(160deg,var(--surface2),var(--surface));border:1px solid var(--border);margin-bottom:14px">
@@ -146,29 +156,19 @@ td input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
   </div>
 </div>
 
-<div class="header-row">
-  <div>
-    <div style="font-size:10px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.15em;margin-bottom:6px">🚴 Ultra Ride Planner</div>
-    <h1 id="route-name">Variante Berlin 2</h1>
-    <div class="sub" id="route-sub">654 km · wird berechnet…</div>
-    <button onclick="if(confirm('Gespeicherten Stand löschen?')){clearState();location.reload();}" style="margin-top:6px;background:none;border:none;font-size:10px;color:var(--text3);cursor:pointer;padding:0;font-family:inherit">↺ Neu starten</button>
-  </div>
-  <div id="plan-only-header-actions" style="display:flex;flex-direction:column;gap:8px;align-items:flex-end">
+<div class="plan-only" style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+  <button onclick="if(confirm('Gespeicherten Stand löschen?')){clearState();location.reload();}" style="background:none;border:none;font-size:10px;color:var(--text3);cursor:pointer;padding:0;font-family:inherit">↺ Neu starten</button>
+  <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end">
     <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
       <button class="btn btn-primary" id="gpx-btn">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
         GPX Import
-      </button>
-      <button class="btn" style="background:var(--surface2);border:1px solid var(--border)" onclick="openProjects()">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-        Projekte
       </button>
       <button class="btn btn-success" id="fertig-btn">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
         Fertig
       </button>
     </div>
-
     <input type="file" id="gpx-file" accept=".gpx" style="display:none"/>
     <div class="err" id="gpx-err" style="display:none"></div>
     <div class="hint">Stopps alle 60 km automatisch</div>
@@ -226,20 +226,6 @@ td input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
   </div>
 </div>
 
-<!-- Wetter & Nacht -->
-<div class="card" id="weather-card">
-  <div class="sec-hdr" onclick="toggleSec('weather')">
-    <div class="section-title" style="margin-bottom:0">Wetter & Nacht</div>
-    <div style="display:flex;align-items:center;gap:8px">
-      <button onclick="event.stopPropagation();loadWeather()" id="weather-btn" class="btn btn-sm" style="background:#0ea5e9">☁️ Laden</button>
-      <span class="chev" id="chev-weather">▾</span>
-    </div>
-  </div>
-  <div class="sec-body closed" id="body-weather" style="max-height:0;margin-top:10px">
-    <div id="weather-body" style="font-size:12px;color:var(--text3)">GPX importieren, dann Laden antippen</div>
-  </div>
-</div>
-
 <!-- Karten je Pausenpunkt -->
 <div id="maps-card" class="card" style="display:none">
   <div class="sec-hdr" onclick="toggleSec('maps')">
@@ -281,7 +267,7 @@ td input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
       <table id="main-table">
         <thead>
           <tr>
-            <th></th><th>#</th><th>Region / Ort</th><th>km</th><th>↑</th><th>Ankunft</th><th>Pause</th><th>Abfahrt</th><th>Hinweis</th>
+            <th>#</th><th>Region / Ort</th><th>km</th><th>↑</th><th>Ankunft</th><th>Pause</th><th>Abfahrt</th><th>Hinweis</th><th></th>
           </tr>
         </thead>
         <tbody id="tbl-body"></tbody>
@@ -289,6 +275,21 @@ td input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
     </div>
   </div>
 </div>
+
+<!-- Wetter & Nacht (ausführlich, Icon+Temp stehen bereits im Etappenplan) -->
+<div class="card" id="weather-card">
+  <div class="sec-hdr" onclick="toggleSec('weather')">
+    <div class="section-title" style="margin-bottom:0">Wetter & Nacht (Details)</div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <button onclick="event.stopPropagation();loadWeather()" id="weather-btn" class="btn btn-sm" style="background:#0ea5e9">☁️ Laden</button>
+      <span class="chev" id="chev-weather">▾</span>
+    </div>
+  </div>
+  <div class="sec-body closed" id="body-weather" style="max-height:0;margin-top:10px">
+    <div id="weather-body" style="font-size:12px;color:var(--text3)">GPX importieren, dann Laden antippen</div>
+  </div>
+</div>
+
 
 <!-- Pause hinzufügen -->
 <div class="card" style="display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap">
@@ -1611,8 +1612,13 @@ function renderTable(computed){
       </td>`;
     }
 
+    // Wetter kompakt neben der Ankunftszeit (Icon + Temp), keine eigene Spalte nötig
+    const wx=getWxForStop(s);
+    const wxInline=wx
+      ?`<div style="font-size:11px;color:var(--text3);margin-top:1px">${WX_ICON[wx.code]||"🌡"} ${wx.temp}°</div>`
+      :"";
+
     tr.innerHTML=`
-      ${delBtn}
       <td style="color:#94a3b8;font-size:11px;text-align:center;padding:0 4px">${i+1}</td>
       <td><input type="text" value="${s.region}" title="${fullTitle}" style="color:${kmColor};font-weight:${isF||isL?'700':'600'}" data-i="${i}" data-f="region"/></td>
       <td style="white-space:nowrap">${isF||isL
@@ -1620,10 +1626,11 @@ function renderTable(computed){
         :`<input type="number" value="${s.km}" min="0" max="${stops[stops.length-1].km}" step="1" data-i="${i}" data-f="km"/>`
       }</td>
       ${diffCell}
-      <td style="font-family:monospace;white-space:nowrap;font-size:12px">${fmt(s.arrival)}</td>
+      <td style="font-family:monospace;white-space:nowrap;font-size:12px">${fmt(s.arrival)}${wxInline}</td>
       <td>${isF||isL?`<span style="color:#94a3b8">—</span>`:`<input type="number" value="${s.pause}" min="0" max="240" step="5" data-i="${i}" data-f="pause"/>`}</td>
       <td style="font-family:monospace;white-space:nowrap;font-size:12px">${isL?"—":fmt(s.departure)}</td>
-      <td><input type="text" value="${s.hinweis}" style="color:#64748b;font-weight:400;font-size:12px" data-i="${i}" data-f="hinweis"/></td>`;
+      <td><input type="text" value="${s.hinweis}" style="color:#64748b;font-weight:400;font-size:12px" data-i="${i}" data-f="hinweis"/></td>
+      ${delBtn}`;
     tbody.appendChild(tr);
   });
 
