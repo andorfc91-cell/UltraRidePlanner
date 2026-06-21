@@ -1076,7 +1076,9 @@ function buildStopMapSvg(stop, stopPois, trackSeg){
     const[x,y]=localProject(p.lat,p.lon,bounds,W,H);
     const col=p.status.open===true?"#4ade80":p.status.open===false?"#f87171":"#94a3b8";
     const r=7;
-    svg+=`<g class="poi-pin" data-lat="${p.lat}" data-lon="${p.lon}" data-name="${esc(p.name)}" style="cursor:pointer">
+    svg+=`<g class="poi-pin" data-lat="${p.lat}" data-lon="${p.lon}" data-name="${esc(p.name)}" 
+      data-type="${esc(p.type)}" data-oh="${esc(p.oh||'')}" data-status="${p.status.open===true?'open':p.status.open===false?'closed':'unknown'}"
+      data-status-label="${esc(p.status.label||'')}" data-km="${p.km}" style="cursor:pointer">
       <circle cx="${x}" cy="${y}" r="${r+3}" fill="${col}" opacity="0.18"/>
       <circle cx="${x}" cy="${y}" r="${r}" fill="${col}" stroke="#0d1424" stroke-width="1.5"/>
     </g>`;
@@ -1153,14 +1155,69 @@ function renderMapsSection(pois){
 
   body.innerHTML=html;
 
-  // attach click handlers to pins (delegate via querySelectorAll since innerHTML was replaced)
+  // attach click handlers to pins — show infobox first, navigation only on confirm
   body.querySelectorAll(".poi-pin").forEach(pin=>{
     pin.style.pointerEvents="auto";
     pin.addEventListener("click",()=>{
-      const lat=pin.getAttribute("data-lat"), lon=pin.getAttribute("data-lon"), name=pin.getAttribute("data-name");
-      window.open(mapsLink(lat,lon,name),"_blank");
+      showPoiInfobox({
+        lat:pin.getAttribute("data-lat"),
+        lon:pin.getAttribute("data-lon"),
+        name:pin.getAttribute("data-name"),
+        type:pin.getAttribute("data-type"),
+        oh:pin.getAttribute("data-oh"),
+        status:pin.getAttribute("data-status"),
+        statusLabel:pin.getAttribute("data-status-label"),
+        km:pin.getAttribute("data-km")
+      });
     });
   });
+}
+
+// ── POI Infobox (tap pin → preview before navigating) ────────────────────────
+function showPoiInfobox(poi){
+  let modal=document.getElementById("poi-infobox");
+  if(!modal){
+    modal=document.createElement("div");
+    modal.id="poi-infobox";
+    modal.style.cssText="display:none;position:fixed;inset:0;z-index:300;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,.7);backdrop-filter:blur(6px)";
+    document.body.appendChild(modal);
+    modal.addEventListener("click",e=>{if(e.target===modal)closePoiInfobox();});
+  }
+
+  const statusCol={open:"#4ade80",closed:"#f87171",unknown:"#94a3b8"}[poi.status]||"#94a3b8";
+  const statusIcon={open:"🟢",closed:"🔴",unknown:"❓"}[poi.status]||"❓";
+  const typeIconSvg=poiSvg(poi.type,statusCol);
+
+  modal.innerHTML=`
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:22px;max-width:340px;width:100%;box-shadow:0 24px 60px rgba(0,0,0,.5)">
+      <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:16px">
+        <div style="flex-shrink:0;background:rgba(255,255,255,.04);border-radius:12px;padding:8px">${typeIconSvg}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:16px;font-weight:800;color:var(--text);line-height:1.25">${poi.name}</div>
+          <div style="font-size:12px;color:var(--text3);margin-top:3px">km ${poi.km} der Route</div>
+        </div>
+      </div>
+      <div style="background:var(--bg);border-radius:10px;padding:12px 14px;margin-bottom:16px;font-size:13px;line-height:1.8">
+        <div style="color:${statusCol};font-weight:700">${statusIcon} ${poi.statusLabel||(poi.status==="open"?"Geöffnet":poi.status==="closed"?"Geschlossen":"Status unbekannt")}</div>
+        <div style="color:var(--text2);margin-top:2px">${poi.oh||"Öffnungszeiten nicht hinterlegt (OSM)"}</div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button onclick="closePoiInfobox()" style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:11px;font-size:13px;font-weight:600;color:var(--text2);cursor:pointer;font-family:inherit">Schließen</button>
+        <button onclick="navigateToPoi('${poi.lat}','${poi.lon}','${esc(poi.name).replace(/'/g,"\\'")}')" style="flex:1.4;background:var(--accent2);border:none;border-radius:10px;padding:11px;font-size:13px;font-weight:700;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;font-family:inherit">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+          Navigation
+        </button>
+      </div>
+    </div>`;
+  modal.style.display="flex";
+}
+function closePoiInfobox(){
+  const modal=document.getElementById("poi-infobox");
+  if(modal)modal.style.display="none";
+}
+function navigateToPoi(lat,lon,name){
+  window.open(mapsLink(lat,lon,name),"_blank");
+  closePoiInfobox();
 }
 
 let lastLoadedPois=[]; // stored for map section reuse
@@ -2221,6 +2278,8 @@ function renderAll(){
   renderSummary(computed);
   renderWarnings(computed);
   if(weatherData)renderWeather(computed);
+  // refresh maps section with previously loaded POI data (new/moved stops included)
+  if(lastLoadedPois.length)renderMapsSection(lastLoadedPois);
   saveState();
 }
 
