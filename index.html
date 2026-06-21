@@ -132,6 +132,10 @@ td input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
     <button onclick="if(confirm('Gespeicherten Stand löschen?')){clearState();location.reload();}" style="margin-top:6px;background:none;border:none;font-size:10px;color:var(--text3);cursor:pointer;padding:0;font-family:inherit">↺ Neu starten</button>
   </div>
   <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end">
+    <button onclick="openEmergencySupply()" style="display:flex;align-items:center;gap:7px;background:linear-gradient(135deg,#ef4444,#dc2626);border:none;border-radius:10px;padding:11px 16px;font-size:13px;font-weight:800;color:#fff;cursor:pointer;font-family:inherit;box-shadow:0 4px 14px rgba(239,68,68,.35);letter-spacing:.02em">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      Jetzt Versorgung finden
+    </button>
     <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
       <button class="btn btn-primary" id="gpx-btn">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
@@ -292,6 +296,31 @@ td input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
   <span><span class="dot" style="background:#f59e0b"></span>knapp</span>
   <span><span class="dot" style="background:#ef4444"></span>kritisch</span>
   <span><span class="dot" style="background:#94a3b8"></span>Nacht</span>
+</div>
+
+<!-- Emergency Supply Overlay -->
+<div id="emergency-overlay" style="display:none;position:fixed;inset:0;z-index:250;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.78);backdrop-filter:blur(8px)">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:20px 20px 0 0;padding:20px;max-width:560px;width:100%;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 -20px 60px rgba(0,0,0,.5)">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <div style="display:flex;align-items:center;gap:8px">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <h2 style="font-size:17px;font-weight:900;color:#fff;letter-spacing:-0.2px">Versorgung jetzt finden</h2>
+      </div>
+      <button onclick="closeEmergencySupply()" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:6px 12px;color:var(--text2);cursor:pointer;font-size:13px;font-family:inherit">✕</button>
+    </div>
+
+    <div id="emergency-status" style="font-size:13px;color:var(--text3);padding:20px 0;text-align:center">📍 Standort wird ermittelt…</div>
+
+    <div id="emergency-controls" style="display:none;margin-bottom:12px">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
+        <span style="font-size:11px;color:var(--text3);font-weight:700">RADIUS</span>
+        <div id="emergency-radius-chips" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+      </div>
+      <div id="emergency-filters" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+    </div>
+
+    <div id="emergency-body" style="overflow-y:auto;flex:1;font-size:12px;color:var(--text3)"></div>
+  </div>
 </div>
 
 <!-- Project Manager Overlay -->
@@ -1209,7 +1238,7 @@ function showPoiInfobox(poi){
         <div style="flex-shrink:0;background:rgba(255,255,255,.04);border-radius:12px;padding:8px">${typeIconSvg}</div>
         <div style="flex:1;min-width:0">
           <div style="font-size:16px;font-weight:800;color:var(--text);line-height:1.25">${poi.name}</div>
-          <div style="font-size:12px;color:var(--text3);margin-top:3px">km ${poi.km} der Route</div>
+          <div style="font-size:12px;color:var(--text3);margin-top:3px">${poi.km!==""&&poi.km!=null?`km ${poi.km} der Route`:"In deiner Nähe"}</div>
         </div>
       </div>
       <div style="background:var(--bg);border-radius:10px;padding:12px 14px;margin-bottom:16px;font-size:13px;line-height:1.8">
@@ -1292,6 +1321,7 @@ function renderPois(elements){
   const body=document.getElementById("poi-body");
   const computed=computeSchedule();
   if(!elements.length){body.innerHTML='<div style="color:var(--text3);font-size:12px">Keine Versorgungspunkte in der Bounding Box gefunden</div>';return;}
+  const VALID_TYPES=new Set(["supermarket","convenience","kiosk","bakery","deli","fuel","drinking_water","cemetery"]);
   const allPois=elements
     .map(e=>{
       // ways come back with .center; nodes have lat/lon directly
@@ -1303,24 +1333,43 @@ function renderPois(elements){
       const t=e.tags||{};
       let type=t.shop||t.amenity||"?";
       if(t.landuse==="cemetery"||t.amenity==="grave_yard"||t.amenity==="cemetery")type="cemetery";
+      // merge convenience-style shops into "kiosk" — same icon/category, avoids duplicate chips
+      if(type==="convenience")type="kiosk";
+      // discard anything not in our known set (stray amenity/shop tag values
+      // like access=yes/no/car slipping through from way members etc.)
+      if(!VALID_TYPES.has(type))return null;
       const km=kmOnTrack(e.lat,e.lon);const arrival=timeAtKm(km,computed);
       const status=type==="cemetery"
         ?{open:null,certain:false,label:"Wasser meist am Eingang"} // cemeteries: assume water tap exists but unconfirmed
         :openStatus(t,arrival);
       const displayName=t.name||(type==="cemetery"?"Friedhof":(POI_ICONS[type]||"?"));
       return{name:displayName,type,icon:POI_ICONS[type]||"📍",priority:POI_PRIORITY[type]||1,km,arrival,status,oh:t["opening_hours"]||"",dist:distToTrack(e.lat,e.lon),lat:e.lat,lon:e.lon};
-    });
+    })
+    .filter(Boolean);
   const pois=allPois.filter(p=>p.dist<8500).sort((a,b)=>a.km-b.km);
-  lastLoadedPois=pois;
+
+  // Cemeteries often come as many small adjacent parcels in OSM — collapse
+  // ones within ~300m of each other into a single entry (same water source anyway)
+  const dedupedPois=[];
+  pois.forEach(p=>{
+    if(p.type==="cemetery"){
+      const tooClose=dedupedPois.some(q=>q.type==="cemetery"&&
+        Math.sqrt((p.lat-q.lat)**2+(p.lon-q.lon)**2)*111000<300);
+      if(tooClose)return;
+    }
+    dedupedPois.push(p);
+  });
+
+  lastLoadedPois=dedupedPois;
   activeTypeFilters=null; // reset filter on fresh load
-  if(!pois.length){
+  if(!dedupedPois.length){
     body.innerHTML=`<div style="color:var(--text3);font-size:12px">Keine Punkte innerhalb 600m der Route (${allPois.length} in der Region gefunden — Route evtl. zu weit entfernt)</div>`;
     document.getElementById("poi-filters").style.display="none";
     renderMapsSection([]);
     return;
   }
-  renderFilterChips(pois);
-  renderPoiList(pois);
+  renderFilterChips(dedupedPois);
+  renderPoiList(dedupedPois);
   refreshSecHeight("poi");
 }
 
@@ -1337,14 +1386,49 @@ function renderPoiList(allPois){
     return;
   }
 
-  // Critical gaps — based on ALL pois regardless of active filter (true safety check)
-  const openPois=allPois.filter(p=>p.status.open!==false&&p.type!=="drinking_water"&&p.type!=="cemetery");
-  let html="",lastKm=0;
-  const gaps=[];
-  for(const p of openPois){if(p.km-lastKm>60)gaps.push({from:lastKm,to:p.km,gap:p.km-lastKm});lastKm=p.km;}
-  if(totalKm-lastKm>60)gaps.push({from:lastKm,to:totalKm,gap:totalKm-lastKm});
-  if(gaps.length){
-    html+=gaps.map(g=>`<div style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);border-radius:8px;padding:9px 12px;margin-bottom:8px;font-size:12px;color:#f87171;font-weight:600">⚠️ ${g.gap} km ohne sicheren Einkauf · km ${g.from}–${g.to} · ~${(g.gap/spd).toFixed(1)} h</div>`).join("");
+  // ── Versorgungslücken-Kette ──────────────────────────────────────────────
+  // Statt "X km ohne Laden" (irreführend, da wir nur um Pausenpunkte suchen):
+  // Prüfe pro Pausenpunkt ob dort im Suchradius ein offener Laden lag.
+  // Eine Kette aufeinanderfolgender Pausenpunkte ohne offenen Laden ist die
+  // eigentliche Gefahr (z.B. mehrere Nacht-Stopps in Folge).
+  const realStopsForChain=computed.filter((s,i)=>i>0&&i<computed.length-1);
+  const stopHasOpen=realStopsForChain.map(s=>{
+    // any non-cemetery, non-water poi within this stop's query radius that is open
+    return allPois.some(p=>
+      Math.abs(p.km-s.km)<10 && // matches our 4-8km query radius logic
+      p.status.open===true &&
+      p.type!=="drinking_water"&&p.type!=="cemetery"
+    );
+  });
+
+  const chains=[];
+  let chainStart=null;
+  for(let i=0;i<realStopsForChain.length;i++){
+    if(!stopHasOpen[i]){
+      if(chainStart===null)chainStart=i;
+    } else {
+      if(chainStart!==null){
+        chains.push({startIdx:chainStart,endIdx:i-1});
+        chainStart=null;
+      }
+    }
+  }
+  if(chainStart!==null)chains.push({startIdx:chainStart,endIdx:realStopsForChain.length-1});
+
+  let html="";
+  if(chains.length){
+    html+=chains.map(c=>{
+      const fromStop=realStopsForChain[c.startIdx];
+      const toStop=realStopsForChain[c.endIdx];
+      const count=c.endIdx-c.startIdx+1;
+      const hours=((toStop.arrival-fromStop.arrival)/3600000).toFixed(1);
+      // last sicherer Einkauf = der Pausenpunkt direkt davor, falls vorhanden
+      const beforeIdx=c.startIdx-1;
+      const lastSafe=beforeIdx>=0?realStopsForChain[beforeIdx]:computed[0];
+      return`<div style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);border-radius:8px;padding:9px 12px;margin-bottom:8px;font-size:12px;color:#f87171;font-weight:600">
+        ⚠️ Ab km ${fromStop.km} keine offene Versorgung mehr bis km ${toStop.km} (${count} Pausenpunkt${count>1?"e":""}, ~${hours} h) — letzter sicherer Einkauf: km ${lastSafe.km}
+      </div>`;
+    }).join("");
   }
 
   // Stats
@@ -1446,14 +1530,9 @@ function renderTable(computed){
       ? `<td style="width:32px"></td>`
       : `<td style="width:32px;text-align:center"><button data-del="${i}" style="background:none;border:none;cursor:pointer;padding:4px;border-radius:6px;line-height:1;font-size:17px;color:#ef4444" title="Zeile löschen">✕</button></td>`;
 
-    const resupplyBadge=(rs&&rs.show)
-      ?`<div style="font-size:10px;color:${rs.open?"#f59e0b":"#f87171"};margin-top:2px;opacity:0.9">${rs.icon} ${rs.label}</div>`
-      :"";
-    const nightMark="";
-    const warnBadges=stopW.map(w=>{
-      const wc={red:"#f87171",orange:"#fb923c",yellow:"#fbbf24"}[w.level]||"#6b85a5";
-      return `<div style="font-size:10px;color:${wc};margin-top:2px;opacity:0.85">${w.icon} ${w.text}</div>`;
-    }).join("");
+    // Badges entfernt — die Ampelfarbe an Ortsname & km trägt die Info bereits,
+    // Details bleiben über den title-Tooltip (Hover/Long-press) abrufbar.
+    const fullTitle=[ampelTitle,...stopW.map(w=>w.text)].filter(Boolean).join(" · ");
 
     let diffCell="<td></td>";
     if(!isL){
@@ -1474,7 +1553,7 @@ function renderTable(computed){
     tr.innerHTML=`
       ${delBtn}
       <td style="color:#94a3b8;font-size:11px;text-align:center;padding:0 4px">${i+1}</td>
-      <td><input type="text" value="${s.region}" style="color:${kmColor};font-weight:${isF||isL?'700':'600'}" data-i="${i}" data-f="region"/>${resupplyBadge}${warnBadges}</td>
+      <td><input type="text" value="${s.region}" title="${fullTitle}" style="color:${kmColor};font-weight:${isF||isL?'700':'600'}" data-i="${i}" data-f="region"/></td>
       <td style="white-space:nowrap">${isF||isL
         ?`<span style="font-family:monospace;color:#64748b">${s.km}</span>`
         :`<input type="number" value="${s.km}" min="0" max="${stops[stops.length-1].km}" step="1" data-i="${i}" data-f="km"/>`
@@ -2055,7 +2134,240 @@ function addPause(){
   document.getElementById("add-region").value="";
   renderAll();
 }
-// ── Project Manager ───────────────────────────────────────────────────────────
+// ── Notfall-Versorgung (aktueller Standort) ───────────────────────────────────
+let lastKnownPosition=null; // cache: {lat, lon, accuracy, ts}
+let emergencyRadius=5; // km, default
+let emergencyActiveFilters=null; // null = all
+let emergencyPois=[];
+
+const EMERGENCY_RADII=[5,10,20];
+
+function compassDirection(bearingDeg){
+  const dirs=["N","NO","O","SO","S","SW","W","NW"];
+  const idx=Math.round(((bearingDeg%360)+360)%360/45)%8;
+  return dirs[idx];
+}
+function bearingTo(lat1,lon1,lat2,lon2){
+  const φ1=lat1*Math.PI/180,φ2=lat2*Math.PI/180,Δλ=(lon2-lon1)*Math.PI/180;
+  const y=Math.sin(Δλ)*Math.cos(φ2);
+  const x=Math.cos(φ1)*Math.sin(φ2)-Math.sin(φ1)*Math.cos(φ2)*Math.cos(Δλ);
+  return(Math.atan2(y,x)*180/Math.PI+360)%360;
+}
+function distMeters(lat1,lon1,lat2,lon2){
+  return haversine(lat1,lon1,lat2,lon2); // already defined for GPX parsing
+}
+function walkTimeLabel(meters){
+  // ~80 m/min walking pace
+  const min=Math.round(meters/80);
+  if(min<1)return"<1 Min zu Fuß";
+  if(min<60)return`~${min} Min zu Fuß`;
+  return`~${(min/60).toFixed(1)} h zu Fuß`;
+}
+
+function openEmergencySupply(){
+  const overlay=document.getElementById("emergency-overlay");
+  overlay.style.display="flex";
+  document.getElementById("emergency-controls").style.display="none";
+  document.getElementById("emergency-body").innerHTML="";
+  emergencyRadius=5;
+  emergencyActiveFilters=null;
+
+  const statusEl=document.getElementById("emergency-status");
+
+  if(!navigator.geolocation){
+    statusEl.textContent="⚠️ Standortzugriff wird von diesem Browser nicht unterstützt";
+    return;
+  }
+
+  statusEl.textContent="📍 Standort wird ermittelt…";
+
+  navigator.geolocation.getCurrentPosition(
+    pos=>{
+      lastKnownPosition={lat:pos.coords.latitude,lon:pos.coords.longitude,accuracy:pos.coords.accuracy,ts:Date.now()};
+      runEmergencySearch();
+    },
+    err=>{
+      if(lastKnownPosition){
+        const ageMin=Math.round((Date.now()-lastKnownPosition.ts)/60000);
+        statusEl.innerHTML=`⚠️ Aktueller Standort nicht verfügbar — nutze letzten bekannten Standort (vor ${ageMin} Min)`;
+        setTimeout(runEmergencySearch,800);
+      } else {
+        statusEl.textContent="⚠️ Standort konnte nicht ermittelt werden — Standortfreigabe prüfen";
+      }
+    },
+    {enableHighAccuracy:true,timeout:8000,maximumAge:60000}
+  );
+}
+
+function closeEmergencySupply(){
+  document.getElementById("emergency-overlay").style.display="none";
+}
+document.getElementById("emergency-overlay").addEventListener("click",e=>{
+  if(e.target===document.getElementById("emergency-overlay"))closeEmergencySupply();
+});
+
+function renderRadiusChips(){
+  const bar=document.getElementById("emergency-radius-chips");
+  bar.innerHTML=EMERGENCY_RADII.map(r=>{
+    const on=r===emergencyRadius;
+    return`<button onclick="setEmergencyRadius(${r})" style="background:${on?"var(--accent2)":"var(--bg)"};color:${on?"#fff":"var(--text2)"};border:1px solid ${on?"var(--accent2)":"var(--border)"};border-radius:16px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">${r} km</button>`;
+  }).join("");
+}
+function setEmergencyRadius(r){
+  emergencyRadius=r;
+  renderRadiusChips();
+  runEmergencySearch();
+}
+
+async function runEmergencySearch(){
+  if(!lastKnownPosition)return;
+  const statusEl=document.getElementById("emergency-status");
+  const bodyEl=document.getElementById("emergency-body");
+  document.getElementById("emergency-controls").style.display="block";
+  renderRadiusChips();
+  statusEl.textContent=`🔍 Suche im Umkreis von ${emergencyRadius} km…`;
+  bodyEl.innerHTML="";
+
+  const{lat,lon}=lastKnownPosition;
+  const radiusM=emergencyRadius*1000;
+  const VALID_TYPES=new Set(["supermarket","convenience","kiosk","bakery","deli","fuel","drinking_water","cemetery"]);
+
+  const query=`[out:json][timeout:25];
+(
+  node["shop"~"^(supermarket|convenience|bakery|deli|kiosk)$"](around:${radiusM},${lat},${lon});
+  node["amenity"="fuel"](around:${radiusM},${lat},${lon});
+  node["amenity"="drinking_water"](around:${radiusM},${lat},${lon});
+  node["amenity"="cemetery"](around:${radiusM},${lat},${lon});
+  way["landuse"="cemetery"](around:${radiusM},${lat},${lon});
+  way["amenity"="grave_yard"](around:${radiusM},${lat},${lon});
+);
+out body center;`;
+
+  try{
+    const res=await fetch("https://overpass-api.de/api/interpreter",{
+      method:"POST",
+      headers:{"Content-Type":"application/x-www-form-urlencoded"},
+      body:"data="+encodeURIComponent(query)
+    });
+    if(!res.ok)throw new Error(`HTTP ${res.status}`);
+    const data=await res.json();
+    const now=new Date();
+
+    const seen=new Set();
+    const pois=(data.elements||[])
+      .filter(e=>{if(seen.has(e.id))return false;seen.add(e.id);return true;})
+      .map(e=>{
+        const elat=e.lat??e.center?.lat, elon=e.lon??e.center?.lon;
+        return{...e,lat:elat,lon:elon};
+      })
+      .filter(e=>e.lat&&e.lon)
+      .map(e=>{
+        const t=e.tags||{};
+        let type=t.shop||t.amenity||"?";
+        if(t.landuse==="cemetery"||t.amenity==="grave_yard"||t.amenity==="cemetery")type="cemetery";
+        if(type==="convenience")type="kiosk";
+        if(!VALID_TYPES.has(type))return null;
+        const status=type==="cemetery"
+          ?{open:null,certain:false,label:"Wasser meist am Eingang"}
+          :openStatus(t,now);
+        const displayName=t.name||(type==="cemetery"?"Friedhof":(POI_ICONS[type]||"?"));
+        const dist=distMeters(lat,lon,e.lat,e.lon);
+        const bearing=bearingTo(lat,lon,e.lat,e.lon);
+        return{name:displayName,type,priority:POI_PRIORITY[type]||1,status,oh:t["opening_hours"]||"",lat:e.lat,lon:e.lon,dist,dir:compassDirection(bearing)};
+      })
+      .filter(Boolean)
+      .filter(p=>p.dist<=radiusM)
+      .sort((a,b)=>{
+        // Tankstellen im Notfall priorisieren (24/7 + Wasser/Snacks/WC meist verfügbar),
+        // dann offen vor unbekannt vor zu, dann Entfernung
+        const aFuel=a.type==="fuel"?1:0, bFuel=b.type==="fuel"?1:0;
+        if(aFuel!==bFuel)return bFuel-aFuel;
+        const aScore=(a.status.open===true?100:a.status.open===null?50:0);
+        const bScore=(b.status.open===true?100:b.status.open===null?50:0);
+        if(aScore!==bScore)return bScore-aScore;
+        return a.dist-b.dist;
+      });
+
+    emergencyPois=pois;
+    emergencyActiveFilters=null;
+
+    if(!pois.length){
+      statusEl.innerHTML=`Nichts im ${emergencyRadius}-km-Umkreis gefunden.`;
+      bodyEl.innerHTML=emergencyRadius<20
+        ?`<button onclick="setEmergencyRadius(${EMERGENCY_RADII[EMERGENCY_RADII.indexOf(emergencyRadius)+1]||20})" style="width:100%;background:var(--accent2);border:none;border-radius:10px;padding:12px;font-size:14px;font-weight:700;color:#fff;cursor:pointer;font-family:inherit">Radius vergrößern →</button>`
+        :`<div style="text-align:center;color:var(--text3);padding:20px 0">Auch im 20-km-Umkreis nichts gefunden. Versuch es an der nächsten größeren Ortschaft.</div>`;
+      return;
+    }
+
+    statusEl.textContent=`${pois.length} Punkte im ${emergencyRadius}-km-Umkreis · sortiert nach Entfernung & Status`;
+    renderEmergencyFilters();
+    renderEmergencyList();
+  }catch(e){
+    statusEl.innerHTML=`⚠️ Suche fehlgeschlagen: ${e.message}`;
+    bodyEl.innerHTML="";
+  }
+}
+
+function renderEmergencyFilters(){
+  const bar=document.getElementById("emergency-filters");
+  const types=[...new Set(emergencyPois.map(p=>p.type))].sort((a,b)=>(POI_PRIORITY[b]||0)-(POI_PRIORITY[a]||0));
+  const allOn=emergencyActiveFilters===null;
+  let html=`<button onclick="toggleEmergencyFilter(null)" style="background:${allOn?"var(--accent2)":"var(--bg)"};color:${allOn?"#fff":"var(--text2)"};border:1px solid ${allOn?"var(--accent2)":"var(--border)"};border-radius:20px;padding:6px 13px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">Alle</button>`;
+  types.forEach(t=>{
+    const on=emergencyActiveFilters===null||emergencyActiveFilters.has(t);
+    const count=emergencyPois.filter(p=>p.type===t).length;
+    html+=`<button onclick="toggleEmergencyFilter('${t}')" style="background:${on?"var(--accent2)":"var(--bg)"};color:${on?"#fff":"var(--text2)"};border:1px solid ${on?"var(--accent2)":"var(--border)"};border-radius:20px;padding:6px 13px;font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:5px;font-family:inherit">${POI_ICONS[t]||"📍"} ${POI_TYPE_LABELS[t]||t} <span style="opacity:.7">${count}</span></button>`;
+  });
+  bar.innerHTML=html;
+}
+function toggleEmergencyFilter(type){
+  if(type===null){emergencyActiveFilters=null;}
+  else{
+    if(emergencyActiveFilters===null)emergencyActiveFilters=new Set([type]);
+    else if(emergencyActiveFilters.has(type)){emergencyActiveFilters.delete(type);if(emergencyActiveFilters.size===0)emergencyActiveFilters=null;}
+    else emergencyActiveFilters.add(type);
+  }
+  renderEmergencyFilters();
+  renderEmergencyList();
+}
+
+function renderEmergencyList(){
+  const bodyEl=document.getElementById("emergency-body");
+  const list=emergencyActiveFilters===null?emergencyPois:emergencyPois.filter(p=>emergencyActiveFilters.has(p.type));
+  if(!list.length){
+    bodyEl.innerHTML='<div style="color:var(--text3);text-align:center;padding:16px 0">Keine Treffer für diesen Filter</div>';
+    return;
+  }
+  bodyEl.innerHTML=list.map((p,idx)=>{
+    const sc=p.status.open===true?"#4ade80":p.status.open===false?"#f87171":"#94a3b8";
+    const si=p.status.open===true?"🟢":p.status.open===false?"🔴":"❓";
+    const distLabel=p.dist<1000?`${Math.round(p.dist)} m`:`${(p.dist/1000).toFixed(1)} km`;
+    return`<div class="emergency-poi-item" data-idx="${idx}" style="padding:11px 4px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px;cursor:pointer">
+      <div style="flex-shrink:0">${poiSvg(p.type,sc)}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(p.name)}</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:1px">${esc(p.oh)||"Zeiten unbekannt"}</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        <div style="font-size:12px;font-weight:700;color:${sc}">${si} ${esc(p.status.label)}</div>
+        <div style="font-size:10px;color:var(--text3)">${p.dir} · ${distLabel} · ${walkTimeLabel(p.dist)}</div>
+      </div>
+    </div>`;
+  }).join("");
+
+  bodyEl.querySelectorAll(".emergency-poi-item").forEach(el=>{
+    el.addEventListener("click",()=>{
+      const p=list[+el.dataset.idx];
+      showPoiInfobox({
+        lat:p.lat,lon:p.lon,name:p.name,type:p.type,oh:p.oh,
+        status:p.status.open===true?"open":p.status.open===false?"closed":"unknown",
+        statusLabel:p.status.label,km:""
+      });
+    });
+  });
+}
+
+
 const PROJECT_PREFIX="urp_project_";
 
 function getAllProjects(){
