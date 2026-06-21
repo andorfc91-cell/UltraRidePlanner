@@ -1098,43 +1098,78 @@ function buildStopMapSvg(stop, stopPois, trackSeg){
   const latPad=(maxLat-minLat)*0.15||0.003, lonPad=(maxLon-minLon)*0.15||0.003;
   const bounds={minLat:minLat-latPad,maxLat:maxLat+latPad,minLon:minLon-lonPad,maxLon:maxLon+lonPad};
 
-  let svg=`<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="display:block;border-radius:12px;background:#0d1424">`;
+  // ── Friendly map-style background (no tile server, fully self-drawn) ──────
+  // Light beige base like classic street maps, with a deterministic pseudo-random
+  // pattern of small "building block" rectangles + a faint road grid so it reads
+  // as a map rather than a dark dot-grid.
+  const BG="#eef0e8", BLOCK="#dcdfd3", BLOCK_LINE="#cfd3c4", ROAD="#ffffff", ROAD_EDGE="#d8dbcd";
+  let svg=`<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="display:block;border-radius:12px;background:${BG};overflow:hidden">`;
+  svg+=`<rect x="0" y="0" width="${W}" height="${H}" fill="${BG}"/>`;
 
-  // subtle grid background
-  svg+=`<rect x="0" y="0" width="${W}" height="${H}" fill="#0d1424"/>`;
-  for(let gx=0;gx<=W;gx+=34){svg+=`<line x1="${gx}" y1="0" x2="${gx}" y2="${H}" stroke="#1c2840" stroke-width="0.5"/>`;}
-  for(let gy=0;gy<=H;gy+=34){svg+=`<line x1="0" y1="${gy}" x2="${W}" y2="${gy}" stroke="#1c2840" stroke-width="0.5"/>`;}
+  // simple seeded pseudo-random so the pattern is stable per render call
+  let seed=Math.round((bounds.minLat+bounds.minLon)*100000)%2147483647;
+  if(seed<=0)seed+=2147483646;
+  function rnd(){seed=(seed*16807)%2147483647;return(seed-1)/2147483646;}
 
-  // track line
+  // faint diagonal "road" lines suggesting a street grid (two crossing directions)
+  for(let i=-2;i<10;i++){
+    const off=i*42;
+    svg+=`<line x1="${off}" y1="0" x2="${off+H*0.5}" y2="${H}" stroke="${ROAD_EDGE}" stroke-width="6" opacity="0.5"/>`;
+    svg+=`<line x1="${off}" y1="0" x2="${off+H*0.5}" y2="${H}" stroke="${ROAD}" stroke-width="3.5" opacity="0.9"/>`;
+  }
+  for(let i=-2;i<8;i++){
+    const off=i*46;
+    svg+=`<line x1="0" y1="${off}" x2="${W}" y2="${off+W*0.3}" stroke="${ROAD_EDGE}" stroke-width="5" opacity="0.4"/>`;
+    svg+=`<line x1="0" y1="${off}" x2="${W}" y2="${off+W*0.3}" stroke="${ROAD}" stroke-width="3" opacity="0.85"/>`;
+  }
+
+  // scattered small "building" rectangles for texture (deterministic per map)
+  for(let i=0;i<55;i++){
+    const bx=rnd()*W, by=rnd()*H;
+    const bw=4+rnd()*7, bh=4+rnd()*7;
+    const rot=Math.round(rnd()*30-15);
+    svg+=`<rect x="${(bx-bw/2).toFixed(1)}" y="${(by-bh/2).toFixed(1)}" width="${bw.toFixed(1)}" height="${bh.toFixed(1)}" rx="1" fill="${BLOCK}" stroke="${BLOCK_LINE}" stroke-width="0.5" opacity="0.8" transform="rotate(${rot} ${bx.toFixed(1)} ${by.toFixed(1)})"/>`;
+  }
+
+  // soft vignette so pins/track stay readable near the edges
+  svg+=`<rect x="0" y="0" width="${W}" height="${H}" fill="url(#mapVignette)"/>
+  <defs><radialGradient id="mapVignette" cx="50%" cy="50%" r="75%">
+    <stop offset="60%" stop-color="#000000" stop-opacity="0"/>
+    <stop offset="100%" stop-color="#000000" stop-opacity="0.06"/>
+  </radialGradient></defs>`;
+
+  // track line — darker, more saturated blue reads better on light background
   if(trackSeg.length>1){
     let path="";
     trackSeg.forEach((p,i)=>{
       const[x,y]=localProject(p.lat,p.lon,bounds,W,H);
       path+=(i===0?"M":"L")+x.toFixed(1)+","+y.toFixed(1)+" ";
     });
-    svg+=`<path d="${path}" fill="none" stroke="#38bdf8" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" opacity="0.55"/>`;
+    svg+=`<path d="${path}" fill="none" stroke="#0c63d4" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" opacity="0.18"/>`;
+    svg+=`<path d="${path}" fill="none" stroke="#1d72e8" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>`;
   }
 
-  // POI pins — use the same type icons as the Versorgung list (poiSvg)
+  // POI pins — same type icons as the Versorgung list (poiSvg), now on light bg
   stopPois.forEach((p,idx)=>{
     const[x,y]=localProject(p.lat,p.lon,bounds,W,H);
-    const col=p.status.open===true?"#4ade80":p.status.open===false?"#f87171":"#94a3b8";
+    const col=p.status.open===true?"#16a34a":p.status.open===false?"#dc2626":"#64748b";
     const r=11; // background circle radius, sized to fit the 22x22 icon
-    const iconSvg=poiSvg(p.type,"#0d1424"); // dark icon strokes, sits on colored bg
+    const iconSvg=poiSvg(p.type,"#ffffff"); // white icon strokes, sits on colored bg
     svg+=`<g class="poi-pin" data-lat="${p.lat}" data-lon="${p.lon}" data-name="${esc(p.name)}" 
       data-type="${esc(p.type)}" data-oh="${esc(p.oh||'')}" data-status="${p.status.open===true?'open':p.status.open===false?'closed':'unknown'}"
       data-status-label="${esc(p.status.label||'')}" data-km="${p.km}" style="cursor:pointer">
-      <circle cx="${x}" cy="${y}" r="${r+2}" fill="${col}" opacity="0.22"/>
-      <circle cx="${x}" cy="${y}" r="${r}" fill="${col}" stroke="#0d1424" stroke-width="1.5"/>
+      <circle cx="${x}" cy="${y+1}" r="${r+1}" fill="#000000" opacity="0.18"/>
+      <circle cx="${x}" cy="${y}" r="${r}" fill="${col}" stroke="#ffffff" stroke-width="2"/>
       <g transform="translate(${x-9},${y-9})" style="pointer-events:none">${iconSvg.replace(/width="22" height="22"/,'width="18" height="18"')}</g>
     </g>`;
   });
 
-  // current stop marker (center, larger, distinct)
+  // current stop marker (center, larger, distinct) — amber stands out on light map
   const[sx,sy]=localProject(stop.lat,stop.lon,bounds,W,H);
   svg+=`<g>
-    <circle cx="${sx}" cy="${sy}" r="11" fill="#f59e0b" opacity="0.25"/>
-    <circle cx="${sx}" cy="${sy}" r="6" fill="#f59e0b" stroke="#0d1424" stroke-width="2"/>
+    <circle cx="${sx}" cy="${sy+1}" r="13" fill="#000000" opacity="0.15"/>
+    <circle cx="${sx}" cy="${sy}" r="12" fill="#f59e0b" stroke="#ffffff" stroke-width="2.5"/>
+    <circle cx="${sx}" cy="${sy}" r="4" fill="#ffffff"/>
   </g>`;
 
   svg+=`</svg>`;
