@@ -790,8 +790,9 @@ function renderWeather(computed){
     const wx=getWxForStop(s);
     const icon=wx?(WX_ICON[wx.code]||"🌡"):"—";
     const dark=isDark(s.arrival);
-    const bg=dark?"rgba(71,85,105,0.15)":"transparent";
-    html+=`<tr style="background:${bg};border-bottom:1px solid rgba(51,65,85,.3)">
+    let bg=dark?"rgba(71,85,105,0.15)":"transparent";
+    if(hovIdx===i)bg="rgba(245,158,11,.12)";
+    html+=`<tr id="weather-row-${i}" style="background:${bg};border-bottom:1px solid rgba(51,65,85,.3);transition:background .15s">
       <td style="padding:7px 8px;font-weight:600;color:var(--text)">${s.region}${dark?"  🌙":""}</td>
       <td style="padding:7px 8px;text-align:center;font-family:monospace;color:var(--text2)">${fmt(s.arrival)}</td>
       <td style="padding:7px 8px;text-align:center;font-size:16px">${icon}</td>
