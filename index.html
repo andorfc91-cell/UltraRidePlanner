@@ -33,7 +33,10 @@ h1{font-size:22px;font-weight:900;color:#fff;letter-spacing:-0.5px;line-height:1
 .card{background:var(--surface);border-radius:16px;border:1px solid var(--border);padding:16px;margin-bottom:12px}
 .card-dark{background:var(--surface2);border-radius:12px;border:1px solid var(--border);padding:12px;margin-bottom:12px}
 .section-title{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.12em;margin-bottom:12px}
-/* Collapsible */
+/* Plan/Ride mode */
+body.ride-mode .plan-only{display:none!important}
+#ride-hero{display:none}
+body.ride-mode #ride-hero{display:block}
 .sec-hdr{display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;-webkit-user-select:none;padding:2px 0;margin-bottom:0}
 .sec-hdr:active{opacity:.7}
 .chev{font-size:20px;color:var(--text2);transition:transform .22s;line-height:1;flex-shrink:0;margin-left:8px;font-weight:700}
@@ -124,6 +127,25 @@ td input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
 <body>
 <div style="max-width:900px;margin:0 auto;padding:16px 14px">
 
+<div style="display:flex;justify-content:center;margin-bottom:14px">
+  <div style="display:inline-flex;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:4px">
+    <button id="mode-plan-btn" onclick="setAppMode('plan')" style="display:flex;align-items:center;gap:6px;padding:9px 18px;border:none;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;background:var(--accent2);color:#fff">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+      Planen
+    </button>
+    <button id="mode-ride-btn" onclick="setAppMode('ride')" style="display:flex;align-items:center;gap:6px;padding:9px 18px;border:none;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;background:transparent;color:var(--text2)">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="18.5" cy="17.5" r="3.5"/><path d="M15 6a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm-3 11.5V14l-3-3 4-3 2 3h2"/></svg>
+      Fahren
+    </button>
+  </div>
+</div>
+
+<div id="ride-hero" class="card" style="background:linear-gradient(160deg,var(--surface2),var(--surface));border:1px solid var(--border);margin-bottom:14px">
+  <div id="ride-hero-body">
+    <div style="text-align:center;padding:20px 0;color:var(--text3);font-size:13px">📍 Standort wird ermittelt…</div>
+  </div>
+</div>
+
 <div class="header-row">
   <div>
     <div style="font-size:10px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.15em;margin-bottom:6px">🚴 Ultra Ride Planner</div>
@@ -131,7 +153,7 @@ td input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
     <div class="sub" id="route-sub">654 km · wird berechnet…</div>
     <button onclick="if(confirm('Gespeicherten Stand löschen?')){clearState();location.reload();}" style="margin-top:6px;background:none;border:none;font-size:10px;color:var(--text3);cursor:pointer;padding:0;font-family:inherit">↺ Neu starten</button>
   </div>
-  <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end">
+  <div id="plan-only-header-actions" style="display:flex;flex-direction:column;gap:8px;align-items:flex-end">
     <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
       <button class="btn btn-primary" id="gpx-btn">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
@@ -146,13 +168,14 @@ td input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
         Fertig
       </button>
     </div>
+
     <input type="file" id="gpx-file" accept=".gpx" style="display:none"/>
     <div class="err" id="gpx-err" style="display:none"></div>
     <div class="hint">Stopps alle 60 km automatisch</div>
   </div>
 </div>
 
-<div class="card">
+<div class="card plan-only" id="params-card">
   <div class="sec-hdr" onclick="toggleSec('params')">
     <div class="section-title" style="margin-bottom:0">Parameter</div>
     <span class="chev open" id="chev-params">▾</span>
@@ -1718,6 +1741,149 @@ function walkTimeLabel(meters){
   return`~${(min/60).toFixed(1)} h zu Fuß`;
 }
 
+// ── Plan / Fahren Modus ───────────────────────────────────────────────────────
+let appMode="plan"; // "plan" | "ride"
+let rideWatchId=null;
+let rideCurrentPos=null; // {lat, lon}
+
+function setAppMode(mode){
+  appMode=mode;
+  document.body.classList.toggle("ride-mode", mode==="ride");
+  const planBtn=document.getElementById("mode-plan-btn");
+  const rideBtn=document.getElementById("mode-ride-btn");
+  if(mode==="ride"){
+    planBtn.style.background="transparent";planBtn.style.color="var(--text2)";
+    rideBtn.style.background="var(--accent2)";rideBtn.style.color="#fff";
+    startRideTracking();
+  } else {
+    rideBtn.style.background="transparent";rideBtn.style.color="var(--text2)";
+    planBtn.style.background="var(--accent2)";planBtn.style.color="#fff";
+    stopRideTracking();
+  }
+  try{localStorage.setItem("urp_app_mode",mode);}catch(e){}
+}
+
+function startRideTracking(){
+  renderRideHero(); // immediate render with whatever data we have
+  if(!navigator.geolocation){
+    document.getElementById("ride-hero-body").innerHTML=
+      '<div style="text-align:center;padding:16px 0;color:var(--text3);font-size:13px">⚠️ Standortzugriff wird nicht unterstützt — zeige geplante Reihenfolge</div>';
+    renderRideHero();
+    return;
+  }
+  if(rideWatchId!==null)return; // already tracking
+  rideWatchId=navigator.geolocation.watchPosition(
+    pos=>{
+      rideCurrentPos={lat:pos.coords.latitude,lon:pos.coords.longitude};
+      lastKnownPosition={lat:pos.coords.latitude,lon:pos.coords.longitude,accuracy:pos.coords.accuracy,ts:Date.now()};
+      renderRideHero();
+    },
+    err=>{ /* keep last known position if any; hero falls back to schedule-based logic */ },
+    {enableHighAccuracy:true,maximumAge:30000,timeout:15000}
+  );
+}
+function stopRideTracking(){
+  if(rideWatchId!==null){navigator.geolocation.clearWatch(rideWatchId);rideWatchId=null;}
+}
+
+// Find the nearest km-position on the route to a given lat/lon (reuses rawTrackPts)
+function nearestRouteKm(lat,lon){
+  if(!rawTrackPts||!rawTrackPts.length)return null;
+  let best=Infinity,bestKm=0;
+  const step=Math.max(1,Math.floor(rawTrackPts.length/1500));
+  for(let i=0;i<rawTrackPts.length;i+=step){
+    const p=rawTrackPts[i];
+    const d=Math.sqrt((lat-p.lat)**2+(lon-p.lon)**2);
+    if(d<best){best=d;bestKm=p.dist/1000;}
+  }
+  return bestKm;
+}
+
+function renderRideHero(){
+  const body=document.getElementById("ride-hero-body");
+  if(!body)return;
+  const computed=computeSchedule();
+  const realStops=computed.filter((s,i)=>i>0&&i<computed.length-1);
+
+  // Determine "current" position along the route: GPS-based km if available,
+  // otherwise fall back to the first not-yet-reached stop in the schedule.
+  let currentKm=null;
+  if(rideCurrentPos&&rawTrackPts&&rawTrackPts.length){
+    currentKm=nearestRouteKm(rideCurrentPos.lat,rideCurrentPos.lon);
+  }
+
+  let nextIdx;
+  if(currentKm!==null){
+    nextIdx=computed.findIndex(s=>s.km>=currentKm-2); // small tolerance
+    if(nextIdx<0)nextIdx=computed.length-1;
+  } else {
+    // no GPS / no GPX: just show the first upcoming stop based on current time
+    const now=new Date();
+    nextIdx=computed.findIndex(s=>s.arrival>now);
+    if(nextIdx<0)nextIdx=1;
+  }
+  if(nextIdx===0)nextIdx=1; // never show "Start" as the hero target once riding
+
+  const next=computed[nextIdx];
+  if(!next){body.innerHTML='<div style="text-align:center;padding:16px 0;color:var(--text3)">Keine weiteren Stopps</div>';return;}
+
+  const isF=nextIdx===0, isL=nextIdx===computed.length-1;
+  const dark=isDark(next.arrival);
+  const rs=(!isF&&!isL)?resupplyStatus(next.arrival):null;
+  const stopW=getStopWarnings(next,nextIdx,computed);
+  let ampelColor="#22c55e";
+  if(dark&&rs&&!rs.open)ampelColor="#ef4444";
+  else if(dark)ampelColor="#94a3b8";
+  else if(rs&&!rs.open)ampelColor="#ef4444";
+  else if(rs&&rs.show&&rs.open)ampelColor="#f59e0b";
+  if(stopW.some(w=>w.level==="red"))ampelColor="#ef4444";
+  else if(stopW.some(w=>w.level==="orange")&&ampelColor==="#22c55e")ampelColor="#f59e0b";
+
+  const wx=getWxForStop(next);
+  const wxIcon=wx?(WX_ICON[wx.code]||"🌡"):"";
+  const distKm=currentKm!==null?Math.max(0,Math.round(next.km-currentKm)):null;
+
+  let html=`
+    <div style="text-align:center;padding:6px 0 4px">
+      <div style="font-size:11px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">${distKm!==null?`Nächster Stopp · noch ~${distKm} km`:"Nächster geplanter Stopp"}</div>
+      <div style="font-size:26px;font-weight:900;color:${ampelColor};line-height:1.15;letter-spacing:-0.3px">${esc(next.region)}</div>
+      <div style="display:flex;justify-content:center;gap:14px;margin-top:8px;flex-wrap:wrap">
+        <span style="font-size:14px;color:var(--text2);font-weight:700">${fmt(next.arrival)}</span>
+        ${next.pause?`<span style="font-size:14px;color:var(--text2)">⏸ ${next.pause} Min</span>`:""}
+        ${wxIcon?`<span style="font-size:14px">${wxIcon} ${wx.temp}°</span>`:""}
+        ${dark?`<span style="font-size:14px">🌙</span>`:`<span style="font-size:14px">☀️</span>`}
+      </div>
+    </div>`;
+
+  // 2-3 upcoming stops preview
+  const upcoming=computed.slice(nextIdx, nextIdx+3);
+  if(upcoming.length>1){
+    html+=`<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border)">`;
+    upcoming.forEach((s,ui)=>{
+      const i=nextIdx+ui;
+      const isFirst=i===0, isLast=i===computed.length-1;
+      const sDark=isDark(s.arrival);
+      const sRs=(!isFirst&&!isLast)?resupplyStatus(s.arrival):null;
+      const sWarn=getStopWarnings(s,i,computed);
+      let sCol="#22c55e";
+      if(sDark&&sRs&&!sRs.open)sCol="#ef4444";
+      else if(sDark)sCol="#94a3b8";
+      else if(sRs&&!sRs.open)sCol="#ef4444";
+      else if(sRs&&sRs.show&&sRs.open)sCol="#f59e0b";
+      if(sWarn.some(w=>w.level==="red"))sCol="#ef4444";
+      else if(sWarn.some(w=>w.level==="orange")&&sCol==="#22c55e")sCol="#f59e0b";
+      html+=`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 4px;${ui===0?"opacity:0.55":""}">
+        <span style="font-size:13px;font-weight:700;color:${sCol}">${esc(s.region)}</span>
+        <span style="font-size:12px;color:var(--text3);font-family:monospace">${fmt(s.arrival)}</span>
+      </div>`;
+    });
+    html+=`</div>`;
+  }
+
+  body.innerHTML=html;
+}
+
+
 function openEmergencySupply(){
   const overlay=document.getElementById("emergency-overlay");
   overlay.style.display="flex";
@@ -2273,6 +2439,7 @@ function renderAll(){
     refreshSecHeight("poi");
     refreshSecHeight("maps");
   }
+  if(appMode==="ride")renderRideHero();
   saveState();
 }
 
@@ -2285,6 +2452,10 @@ if(!restored){// use berlin defaults already set
 }
 updateWeekday();
 renderAll();
+try{
+  const savedMode=localStorage.getItem("urp_app_mode");
+  if(savedMode==="ride")setAppMode("ride");
+}catch(e){}
 </script>
 </body>
 </html>
