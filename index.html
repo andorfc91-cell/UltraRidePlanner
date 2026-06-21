@@ -238,6 +238,7 @@ td input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
     </div>
   </div>
   <div class="sec-body closed" id="body-poi" style="max-height:0;margin-top:10px">
+    <div id="poi-filters" style="display:none;flex-wrap:wrap;gap:6px;margin-bottom:12px"></div>
     <div id="poi-body" style="font-size:12px;color:var(--text3)">GPX importieren, dann Laden antippen</div>
   </div>
 </div>
@@ -889,6 +890,12 @@ function poiSvg(type,color="#a8bbd4"){
     </svg>`,
     drinking_water:`<svg width="22" height="22" viewBox="0 0 24 24" ${s}>
       <path d="M12 2C6 8 4 12 4 15a8 8 0 0 0 16 0c0-3-2-7-8-13z"/>
+    </svg>`,
+    cemetery:`<svg width="22" height="22" viewBox="0 0 24 24" ${s}>
+      <path d="M12 2v8"/>
+      <path d="M8 6h8"/>
+      <path d="M6 22v-9a6 6 0 0 1 12 0v9"/>
+      <line x1="3" y1="22" x2="21" y2="22"/>
     </svg>`
   };
   return icons[type]||`<svg width="22" height="22" viewBox="0 0 24 24" ${s}><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`;
@@ -901,9 +908,10 @@ const POI_ICONS={
   deli:"🧀",
   kiosk:"🏪",
   fuel:"⛽",
-  drinking_water:"💧"
+  drinking_water:"💧",
+  cemetery:"⛲"
 };
-const POI_PRIORITY={supermarket:5,bakery:4,deli:3,convenience:3,kiosk:2,fuel:2,drinking_water:1};
+const POI_PRIORITY={supermarket:5,bakery:4,deli:3,convenience:3,kiosk:2,fuel:2,drinking_water:1,cemetery:1};
 
 function distToTrack(lat,lon){
   if(!rawTrackPts||!rawTrackPts.length)return 0;
@@ -993,16 +1001,20 @@ async function loadPois(){
   let aroundClauses="";
   clauses.forEach(c=>{
     const pos=posForKm(c.km);
+    const ll=`around:${c.radius},${pos.lat.toFixed(5)},${pos.lon.toFixed(5)}`;
     aroundClauses+=`
-  node["shop"~"^(supermarket|convenience|bakery|deli|kiosk)$"](around:${c.radius},${pos.lat.toFixed(5)},${pos.lon.toFixed(5)});
-  node["amenity"="fuel"](around:${c.radius},${pos.lat.toFixed(5)},${pos.lon.toFixed(5)});
-  node["amenity"="drinking_water"](around:${c.radius},${pos.lat.toFixed(5)},${pos.lon.toFixed(5)});`;
+  node["shop"~"^(supermarket|convenience|bakery|deli|kiosk)$"](${ll});
+  node["amenity"="fuel"](${ll});
+  node["amenity"="drinking_water"](${ll});
+  node["amenity"="cemetery"](${ll});
+  way["landuse"="cemetery"](${ll});
+  way["amenity"="grave_yard"](${ll});`;
   });
 
   const query=`[out:json][timeout:30];
 (${aroundClauses}
 );
-out body;`;
+out body center;`;
 
   try{
     const res=await fetch("https://overpass-api.de/api/interpreter",{
@@ -1222,28 +1234,105 @@ function navigateToPoi(lat,lon,name){
 
 let lastLoadedPois=[]; // stored for map section reuse
 
+// ── Type filter (Bäckerei, Supermarkt, Tankstelle, Wasser, Friedhof, ...) ────
+const POI_TYPE_LABELS={
+  supermarket:"Supermarkt",convenience:"Kiosk",bakery:"Bäckerei",deli:"Feinkost",
+  kiosk:"Kiosk",fuel:"Tankstelle",drinking_water:"Trinkwasser",cemetery:"Friedhof"
+};
+let activeTypeFilters=null; // null = all types shown; Set = only these types
+
+function renderFilterChips(pois){
+  const bar=document.getElementById("poi-filters");
+  const types=[...new Set(pois.map(p=>p.type))].sort((a,b)=>(POI_PRIORITY[b]||0)-(POI_PRIORITY[a]||0));
+  if(!types.length){bar.style.display="none";return;}
+  bar.style.display="flex";
+  const allActive=activeTypeFilters===null;
+  let html=`<button onclick="toggleTypeFilter(null)" style="background:${allActive?"var(--accent2)":"var(--bg)"};color:${allActive?"#fff":"var(--text2)"};border:1px solid ${allActive?"var(--accent2)":"var(--border)"};border-radius:20px;padding:6px 13px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">Alle</button>`;
+  types.forEach(t=>{
+    const isOn=activeTypeFilters===null||activeTypeFilters.has(t);
+    const count=pois.filter(p=>p.type===t).length;
+    html+=`<button onclick="toggleTypeFilter('${t}')" style="background:${isOn?"var(--accent2)":"var(--bg)"};color:${isOn?"#fff":"var(--text2)"};border:1px solid ${isOn?"var(--accent2)":"var(--border)"};border-radius:20px;padding:6px 13px;font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:5px;font-family:inherit">
+      ${POI_ICONS[t]||"📍"} ${POI_TYPE_LABELS[t]||t} <span style="opacity:.7">${count}</span>
+    </button>`;
+  });
+  bar.innerHTML=html;
+}
+
+function toggleTypeFilter(type){
+  if(type===null){activeTypeFilters=null;}
+  else{
+    if(activeTypeFilters===null){
+      // switching from "all" to a single selected type
+      activeTypeFilters=new Set([type]);
+    } else if(activeTypeFilters.has(type)){
+      activeTypeFilters.delete(type);
+      if(activeTypeFilters.size===0)activeTypeFilters=null;
+    } else {
+      activeTypeFilters.add(type);
+    }
+  }
+  if(lastLoadedPois.length){
+    renderFilterChips(lastLoadedPois);
+    renderPoiList(lastLoadedPois);
+    renderMapsSection(lastLoadedPois);
+  }
+}
+
+function applyTypeFilter(pois){
+  if(activeTypeFilters===null)return pois;
+  return pois.filter(p=>activeTypeFilters.has(p.type));
+}
+
 function renderPois(elements){
+  const body=document.getElementById("poi-body");
+  const computed=computeSchedule();
+  if(!elements.length){body.innerHTML='<div style="color:var(--text3);font-size:12px">Keine Versorgungspunkte in der Bounding Box gefunden</div>';return;}
+  const allPois=elements
+    .map(e=>{
+      // ways come back with .center; nodes have lat/lon directly
+      const lat=e.lat??e.center?.lat, lon=e.lon??e.center?.lon;
+      return{...e,lat,lon};
+    })
+    .filter(e=>e.lat&&e.lon)
+    .map(e=>{
+      const t=e.tags||{};
+      let type=t.shop||t.amenity||"?";
+      if(t.landuse==="cemetery"||t.amenity==="grave_yard"||t.amenity==="cemetery")type="cemetery";
+      const km=kmOnTrack(e.lat,e.lon);const arrival=timeAtKm(km,computed);
+      const status=type==="cemetery"
+        ?{open:null,certain:false,label:"Wasser meist am Eingang"} // cemeteries: assume water tap exists but unconfirmed
+        :openStatus(t,arrival);
+      const displayName=t.name||(type==="cemetery"?"Friedhof":(POI_ICONS[type]||"?"));
+      return{name:displayName,type,icon:POI_ICONS[type]||"📍",priority:POI_PRIORITY[type]||1,km,arrival,status,oh:t["opening_hours"]||"",dist:distToTrack(e.lat,e.lon),lat:e.lat,lon:e.lon};
+    });
+  const pois=allPois.filter(p=>p.dist<8500).sort((a,b)=>a.km-b.km);
+  lastLoadedPois=pois;
+  activeTypeFilters=null; // reset filter on fresh load
+  if(!pois.length){
+    body.innerHTML=`<div style="color:var(--text3);font-size:12px">Keine Punkte innerhalb 600m der Route (${allPois.length} in der Region gefunden — Route evtl. zu weit entfernt)</div>`;
+    document.getElementById("poi-filters").style.display="none";
+    renderMapsSection([]);
+    return;
+  }
+  renderFilterChips(pois);
+  renderPoiList(pois);
+}
+
+function renderPoiList(allPois){
   const body=document.getElementById("poi-body");
   const computed=computeSchedule();
   const totalKm=stops[stops.length-1].km;
   const spd=Math.max(1,parseFloat(document.getElementById("speed").value)||20);
-  if(!elements.length){body.innerHTML='<div style="color:var(--text3);font-size:12px">Keine Versorgungspunkte in der Bounding Box gefunden</div>';return;}
-  const allPois=elements.filter(e=>e.lat&&e.lon).map(e=>{
-    const t=e.tags||{};const type=t.shop||t.amenity||"?";
-    const km=kmOnTrack(e.lat,e.lon);const arrival=timeAtKm(km,computed);
-    const status=openStatus(t,arrival);
-    return{name:t.name||(POI_ICONS[type]||"?"),type,icon:POI_ICONS[type]||"📍",priority:POI_PRIORITY[type]||1,km,arrival,status,oh:t["opening_hours"]||"",dist:distToTrack(e.lat,e.lon),lat:e.lat,lon:e.lon};
-  });
-  const pois=allPois.filter(p=>p.dist<8500).sort((a,b)=>a.km-b.km);
-  lastLoadedPois=pois;
+  const pois=applyTypeFilter(allPois);
+
   if(!pois.length){
-    body.innerHTML=`<div style="color:var(--text3);font-size:12px">Keine Punkte innerhalb 600m der Route (${allPois.length} in der Region gefunden — Route evtl. zu weit entfernt)</div>`;
-    renderMapsSection([]);
+    body.innerHTML='<div style="color:var(--text3);font-size:12px;padding:8px 0">Keine Treffer für die gewählten Filter</div>';
+    renderMapsSection(allPois); // maps still show full unfiltered set context
     return;
   }
 
-  // Critical gaps
-  const openPois=pois.filter(p=>p.status.open!==false&&p.type!=="drinking_water");
+  // Critical gaps — based on ALL pois regardless of active filter (true safety check)
+  const openPois=allPois.filter(p=>p.status.open!==false&&p.type!=="drinking_water"&&p.type!=="cemetery");
   let html="",lastKm=0;
   const gaps=[];
   for(const p of openPois){if(p.km-lastKm>60)gaps.push({from:lastKm,to:p.km,gap:p.km-lastKm});lastKm=p.km;}
@@ -2278,8 +2367,10 @@ function renderAll(){
   renderSummary(computed);
   renderWarnings(computed);
   if(weatherData)renderWeather(computed);
-  // refresh maps section with previously loaded POI data (new/moved stops included)
-  if(lastLoadedPois.length)renderMapsSection(lastLoadedPois);
+  // refresh poi list + maps with previously loaded data (new/moved stops included)
+  if(lastLoadedPois.length){
+    renderPoiList(lastLoadedPois);
+  }
   saveState();
 }
 
