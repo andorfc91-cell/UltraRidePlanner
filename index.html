@@ -696,6 +696,7 @@ async function loadWeather(){
     const wb=document.getElementById("body-weather");
     if(wb&&wb.classList.contains("closed"))toggleSec("weather");
     renderWeather(computed);
+    refreshSecHeight("weather");
   }catch(e){
     document.getElementById("weather-body").innerHTML='<span style="color:#dc2626">Wetter konnte nicht geladen werden – Internetverbindung prüfen</span>';
   }finally{
@@ -1033,6 +1034,8 @@ out body center;`;
     const pb=document.getElementById("body-poi");
     if(pb&&pb.classList.contains("closed"))toggleSec("poi");
     renderPois(unique);
+    refreshSecHeight("poi");
+    refreshSecHeight("maps");
   }catch(e){
     document.getElementById("poi-body").innerHTML=
       `<div style="color:#f87171;font-size:13px">⚠️ ${e.message}</div>`;
@@ -1275,6 +1278,8 @@ function toggleTypeFilter(type){
     renderFilterChips(lastLoadedPois);
     renderPoiList(lastLoadedPois);
     renderMapsSection(lastLoadedPois);
+    refreshSecHeight("poi");
+    refreshSecHeight("maps");
   }
 }
 
@@ -1316,6 +1321,7 @@ function renderPois(elements){
   }
   renderFilterChips(pois);
   renderPoiList(pois);
+  refreshSecHeight("poi");
 }
 
 function renderPoiList(allPois){
@@ -2276,7 +2282,6 @@ document.getElementById("gpx-file").onchange=e=>{
 };
 
 // ── Collapsible sections ──────────────────────────────────────────────────────
-const SEC_MAX={params:"600px",chart:"500px",weather:"2000px",poi:"3000px",table:"8000px",maps:"6000px"};
 function toggleSec(id){
   const body=document.getElementById("body-"+id);
   const chev=document.getElementById("chev-"+id);
@@ -2288,11 +2293,23 @@ function toggleSec(id){
     if(chev)chev.classList.remove("open");
   } else {
     body.classList.remove("closed");
-    body.style.maxHeight=SEC_MAX[id]||"2000px";
+    // use actual content height instead of a fixed guess — always fits, no clipping
+    body.style.maxHeight=body.scrollHeight+"px";
     if(chev)chev.classList.add("open");
-    // redraw chart if opening
     if(id==="chart")renderAll();
   }
+}
+
+// Recalculate max-height for an already-open section after its content changed
+// (e.g. new filter chips, more POI results) — without this, growth gets clipped
+// by the overflow:hidden + stale max-height combo.
+function refreshSecHeight(id){
+  const body=document.getElementById("body-"+id);
+  if(!body||body.classList.contains("closed"))return;
+  // briefly allow natural height to measure, then lock it in
+  body.style.maxHeight="none";
+  const h=body.scrollHeight;
+  body.style.maxHeight=h+"px";
 }
 function difficultyScore(km1, km2){
   const pts = elevGrid.filter(([k])=>k>=km1&&k<=km2);
@@ -2370,6 +2387,8 @@ function renderAll(){
   // refresh poi list + maps with previously loaded data (new/moved stops included)
   if(lastLoadedPois.length){
     renderPoiList(lastLoadedPois);
+    refreshSecHeight("poi");
+    refreshSecHeight("maps");
   }
   saveState();
 }
