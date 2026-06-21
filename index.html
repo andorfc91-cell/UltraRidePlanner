@@ -217,6 +217,17 @@ td input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
   </div>
 </div>
 
+<!-- Karten je Pausenpunkt -->
+<div id="maps-card" class="card" style="display:none">
+  <div class="sec-hdr" onclick="toggleSec('maps')">
+    <div class="section-title" style="margin-bottom:0">Karten je Pausenpunkt</div>
+    <span class="chev" id="chev-maps">▾</span>
+  </div>
+  <div class="sec-body closed" id="body-maps" style="max-height:0;margin-top:10px">
+    <div id="maps-body" style="font-size:12px;color:var(--text3)">Lädt automatisch nach „Versorgung laden“</div>
+  </div>
+</div>
+
 <!-- Versorgung -->
 <div id="poi-card" class="card">
   <div class="sec-hdr" onclick="toggleSec('poi')">
@@ -1016,6 +1027,144 @@ out body;`;
   }finally{btn.textContent="🔍 Neu laden";btn.disabled=false;}
 }
 
+// ── Mini-Karten je Pausenpunkt ────────────────────────────────────────────────
+function localProject(lat,lon,bounds,W,H,pad=24){
+  // simple equirectangular projection, good enough for small local extents
+  const{minLat,maxLat,minLon,maxLon}=bounds;
+  const lonSpan=Math.max(maxLon-minLon,0.0005);
+  const latSpan=Math.max(maxLat-minLat,0.0005);
+  const x=pad+((lon-minLon)/lonSpan)*(W-2*pad);
+  const y=pad+((maxLat-lat)/latSpan)*(H-2*pad); // invert y (north=up)
+  return[x,y];
+}
+
+function mapsLink(lat,lon,name){
+  const isIOS=/iPhone|iPad|iPod/.test(navigator.userAgent);
+  if(isIOS) return `https://maps.apple.com/?daddr=${lat},${lon}&q=${encodeURIComponent(name)}`;
+  return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}`;
+}
+
+function buildStopMapSvg(stop, stopPois, trackSeg){
+  const W=340,H=260;
+  // bounds: include track segment points + poi points
+  const allPts=[...trackSeg.map(p=>[p.lat,p.lon]), ...stopPois.map(p=>[p.lat,p.lon]), [stop.lat,stop.lon]];
+  let minLat=Math.min(...allPts.map(p=>p[0])), maxLat=Math.max(...allPts.map(p=>p[0]));
+  let minLon=Math.min(...allPts.map(p=>p[1])), maxLon=Math.max(...allPts.map(p=>p[1]));
+  // add small padding margin in degrees so points aren't on the edge
+  const latPad=(maxLat-minLat)*0.15||0.003, lonPad=(maxLon-minLon)*0.15||0.003;
+  const bounds={minLat:minLat-latPad,maxLat:maxLat+latPad,minLon:minLon-lonPad,maxLon:maxLon+lonPad};
+
+  let svg=`<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="display:block;border-radius:12px;background:#0d1424">`;
+
+  // subtle grid background
+  svg+=`<rect x="0" y="0" width="${W}" height="${H}" fill="#0d1424"/>`;
+  for(let gx=0;gx<=W;gx+=34){svg+=`<line x1="${gx}" y1="0" x2="${gx}" y2="${H}" stroke="#1c2840" stroke-width="0.5"/>`;}
+  for(let gy=0;gy<=H;gy+=34){svg+=`<line x1="0" y1="${gy}" x2="${W}" y2="${gy}" stroke="#1c2840" stroke-width="0.5"/>`;}
+
+  // track line
+  if(trackSeg.length>1){
+    let path="";
+    trackSeg.forEach((p,i)=>{
+      const[x,y]=localProject(p.lat,p.lon,bounds,W,H);
+      path+=(i===0?"M":"L")+x.toFixed(1)+","+y.toFixed(1)+" ";
+    });
+    svg+=`<path d="${path}" fill="none" stroke="#38bdf8" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" opacity="0.55"/>`;
+  }
+
+  // POI pins
+  stopPois.forEach((p,idx)=>{
+    const[x,y]=localProject(p.lat,p.lon,bounds,W,H);
+    const col=p.status.open===true?"#4ade80":p.status.open===false?"#f87171":"#94a3b8";
+    const r=7;
+    svg+=`<g class="poi-pin" data-lat="${p.lat}" data-lon="${p.lon}" data-name="${esc(p.name)}" style="cursor:pointer">
+      <circle cx="${x}" cy="${y}" r="${r+3}" fill="${col}" opacity="0.18"/>
+      <circle cx="${x}" cy="${y}" r="${r}" fill="${col}" stroke="#0d1424" stroke-width="1.5"/>
+    </g>`;
+  });
+
+  // current stop marker (center, larger, distinct)
+  const[sx,sy]=localProject(stop.lat,stop.lon,bounds,W,H);
+  svg+=`<g>
+    <circle cx="${sx}" cy="${sy}" r="11" fill="#f59e0b" opacity="0.25"/>
+    <circle cx="${sx}" cy="${sy}" r="6" fill="#f59e0b" stroke="#0d1424" stroke-width="2"/>
+  </g>`;
+
+  svg+=`</svg>`;
+  return svg;
+}
+
+function renderMapsSection(pois){
+  const card=document.getElementById("maps-card");
+  const body=document.getElementById("maps-body");
+
+  if(!pois.length||!rawTrackPts||!rawTrackPts.length){
+    card.style.display="none";
+    return;
+  }
+  card.style.display="block";
+
+  const computed=computeSchedule();
+  // real stops only, exclude start (i=0) and end
+  const realStops=computed.filter((s,i)=>i>0&&i<computed.length-1);
+
+  if(!realStops.length){
+    body.innerHTML='<div style="color:var(--text3);font-size:12px">Keine Zwischenstopps vorhanden</div>';
+    return;
+  }
+
+  function posForKm(km){
+    const target=km*1000;let best=Infinity,bi=0;
+    for(let i=0;i<rawTrackPts.length;i++){const d=Math.abs(rawTrackPts[i].dist-target);if(d<best){best=d;bi=i;}}
+    return rawTrackPts[bi];
+  }
+  function trackSegmentAround(km,radiusKm){
+    const target=km*1000,r=radiusKm*1000;
+    return rawTrackPts.filter(p=>Math.abs(p.dist-target)<=r)
+      .filter((_,i,arr)=>i%Math.max(1,Math.floor(arr.length/80))===0); // downsample for SVG perf
+  }
+
+  let html="";
+  realStops.forEach(s=>{
+    const pos=posForKm(s.km);
+    const stop={lat:pos.lat,lon:pos.lon};
+    // which pois belong to this stop: nearest by km, within reasonable distance
+    const nearby=pois.filter(p=>Math.abs(p.km-s.km)<10) // matches our 4-8km query radius logic
+      .sort((a,b)=>{
+        const da=Math.hypot(a.lat-stop.lat,a.lon-stop.lon);
+        const db=Math.hypot(b.lat-stop.lat,b.lon-stop.lon);
+        return da-db;
+      })
+      .slice(0,12);
+
+    const trackSeg=trackSegmentAround(s.km,9);
+    const svg=buildStopMapSvg(stop,nearby,trackSeg);
+    const openCount=nearby.filter(p=>p.status.open===true).length;
+
+    html+=`<div style="margin-bottom:18px">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:8px">
+        <div style="font-size:14px;font-weight:800;color:var(--text)">${s.region} <span style="font-weight:500;color:var(--text3);font-size:12px">· km ${s.km}</span></div>
+        <div style="font-size:11px;color:${openCount>0?"#4ade80":"var(--text3)"};font-weight:700">${nearby.length} Punkte${openCount>0?` · ${openCount} offen`:""}</div>
+      </div>
+      <div class="stop-map-wrap" style="position:relative;border-radius:12px;overflow:hidden;border:1px solid var(--border)" data-stop-idx="${s.km}">
+        ${svg}
+      </div>
+    </div>`;
+  });
+
+  body.innerHTML=html;
+
+  // attach click handlers to pins (delegate via querySelectorAll since innerHTML was replaced)
+  body.querySelectorAll(".poi-pin").forEach(pin=>{
+    pin.style.pointerEvents="auto";
+    pin.addEventListener("click",()=>{
+      const lat=pin.getAttribute("data-lat"), lon=pin.getAttribute("data-lon"), name=pin.getAttribute("data-name");
+      window.open(mapsLink(lat,lon,name),"_blank");
+    });
+  });
+}
+
+let lastLoadedPois=[]; // stored for map section reuse
+
 function renderPois(elements){
   const body=document.getElementById("poi-body");
   const computed=computeSchedule();
@@ -1026,11 +1175,14 @@ function renderPois(elements){
     const t=e.tags||{};const type=t.shop||t.amenity||"?";
     const km=kmOnTrack(e.lat,e.lon);const arrival=timeAtKm(km,computed);
     const status=openStatus(t,arrival);
-    return{name:t.name||(POI_ICONS[type]||"?"),type,icon:POI_ICONS[type]||"📍",priority:POI_PRIORITY[type]||1,km,arrival,status,oh:t["opening_hours"]||"",dist:distToTrack(e.lat,e.lon)};
+    return{name:t.name||(POI_ICONS[type]||"?"),type,icon:POI_ICONS[type]||"📍",priority:POI_PRIORITY[type]||1,km,arrival,status,oh:t["opening_hours"]||"",dist:distToTrack(e.lat,e.lon),lat:e.lat,lon:e.lon};
   });
   const pois=allPois.filter(p=>p.dist<8500).sort((a,b)=>a.km-b.km);
+  lastLoadedPois=pois;
   if(!pois.length){
-    body.innerHTML=`<div style="color:var(--text3);font-size:12px">Keine Punkte innerhalb 600m der Route (${allPois.length} in der Region gefunden — Route evtl. zu weit entfernt)</div>`;return;
+    body.innerHTML=`<div style="color:var(--text3);font-size:12px">Keine Punkte innerhalb 600m der Route (${allPois.length} in der Region gefunden — Route evtl. zu weit entfernt)</div>`;
+    renderMapsSection([]);
+    return;
   }
 
   // Critical gaps
@@ -1090,6 +1242,7 @@ function renderPois(elements){
   });
   html+=`<div style="font-size:10px;color:var(--text3);margin-top:6px">© OpenStreetMap · Öffnungszeiten aus OSM · Ankunft basierend auf deinen Parametern</div>`;
   body.innerHTML=html;
+  renderMapsSection(pois);
 }
 
 
@@ -1977,7 +2130,7 @@ document.getElementById("gpx-file").onchange=e=>{
 };
 
 // ── Collapsible sections ──────────────────────────────────────────────────────
-const SEC_MAX={params:"600px",chart:"500px",weather:"2000px",poi:"3000px",table:"8000px"};
+const SEC_MAX={params:"600px",chart:"500px",weather:"2000px",poi:"3000px",table:"8000px",maps:"6000px"};
 function toggleSec(id){
   const body=document.getElementById("body-"+id);
   const chev=document.getElementById("chev-"+id);
