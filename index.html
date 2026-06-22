@@ -25,7 +25,7 @@
   --red:#ef4444;
   --orange:#f97316;
 }
-body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);padding:0 0 env(safe-area-inset-bottom,40px);min-height:100dvh}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);padding:env(safe-area-inset-top,20px) 0 env(safe-area-inset-bottom,40px);min-height:100dvh}
 h1{font-size:22px;font-weight:900;color:#fff;letter-spacing:-0.5px;line-height:1.1}
 .sub{font-size:12px;color:var(--text2);margin-top:4px;font-weight:500;letter-spacing:0.01em}
 
@@ -461,7 +461,7 @@ function applyPauseInterval(){
   renderAll();
 }
 function computeSchedule(){
-  const spd=Math.max(1,parseFloat(document.getElementById("speed").value)||20);
+  const spd=Math.max(1,(appMode==="ride"&&rideSpeedOverride!==null)?rideSpeedOverride:(parseFloat(document.getElementById("speed").value)||20));
   let clk=getStartDate();
   return stops.map((s,i)=>{
     const arr=new Date(clk);
@@ -1606,9 +1606,10 @@ function renderTable(computed){
         const filled=b<df.score;
         return `<span style="display:inline-block;width:4px;height:${8+b*3}px;border-radius:2px;background:${filled?dcol:"rgba(255,255,255,0.1)"};margin-right:2px;vertical-align:bottom"></span>`;
       }).join("");
-      diffCell=`<td style="white-space:nowrap" title="${df.label} · ${df.uphillM}m ↑">
+      diffCell=`<td style="white-space:nowrap" title="${df.label} · ${df.uphillM}m ↑ ${df.downhillM}m ↓">
         <div style="display:flex;align-items:flex-end;gap:0;margin-bottom:2px">${bars}</div>
-        <div style="font-size:10px;color:var(--text3)">${df.uphillM}m</div>
+        <div style="font-size:10px;color:var(--text3)">↑${df.uphillM}m</div>
+        <div style="font-size:10px;color:var(--text3)">↓${df.downhillM}m</div>
       </td>`;
     }
 
@@ -1752,6 +1753,9 @@ function walkTimeLabel(meters){
 let appMode="plan"; // "plan" | "ride"
 let rideWatchId=null;
 let rideCurrentPos=null; // {lat, lon}
+let rideSpeedOverride=null; // km/h override while in ride mode, null = use param input
+let gpsSpeedSuggestion=null; // {kmh, ts} suggested speed from GPS tracking
+let gpsSpeedHistory=[]; // [{km, ts}] for rolling speed calculation
 
 function setAppMode(mode){
   appMode=mode;
@@ -1761,10 +1765,19 @@ function setAppMode(mode){
   if(mode==="ride"){
     planBtn.style.background="transparent";planBtn.style.color="var(--text2)";
     rideBtn.style.background="var(--accent2)";rideBtn.style.color="#fff";
+    // Init ride speed from current param if not already set
+    if(rideSpeedOverride===null){
+      rideSpeedOverride=Math.max(5,parseFloat(document.getElementById("speed").value)||20);
+    }
+    gpsSpeedHistory=[];
+    gpsSpeedSuggestion=null;
     startRideTracking();
   } else {
     rideBtn.style.background="transparent";rideBtn.style.color="var(--text2)";
     planBtn.style.background="var(--accent2)";planBtn.style.color="#fff";
+    rideSpeedOverride=null;
+    gpsSpeedSuggestion=null;
+    gpsSpeedHistory=[];
     stopRideTracking();
   }
   try{localStorage.setItem("urp_app_mode",mode);}catch(e){}
@@ -1783,6 +1796,31 @@ function startRideTracking(){
     pos=>{
       rideCurrentPos={lat:pos.coords.latitude,lon:pos.coords.longitude};
       lastKnownPosition={lat:pos.coords.latitude,lon:pos.coords.longitude,accuracy:pos.coords.accuracy,ts:Date.now()};
+      // Record GPS position for speed calculation
+      if(rawTrackPts&&rawTrackPts.length){
+        const km=nearestRouteKm(pos.coords.latitude,pos.coords.longitude);
+        gpsSpeedHistory.push({km,ts:Date.now()});
+        // Keep only last 20 minutes of history
+        const cutoff=Date.now()-20*60*1000;
+        gpsSpeedHistory=gpsSpeedHistory.filter(p=>p.ts>cutoff);
+        // Every 10 minutes, recalculate suggested speed from last 10 min of data
+        const tenMinAgo=Date.now()-10*60*1000;
+        const recent=gpsSpeedHistory.filter(p=>p.ts>=tenMinAgo);
+        if(recent.length>=2){
+          const oldest=recent[0],newest=recent[recent.length-1];
+          const distKm=Math.abs(newest.km-oldest.km);
+          const timeH=(newest.ts-oldest.ts)/3600000;
+          if(timeH>0.05){ // at least 3 min elapsed
+            const calcSpeed=Math.round(distKm/timeH*10)/10;
+            if(calcSpeed>=5&&calcSpeed<=60){
+              const lastSuggTs=gpsSpeedSuggestion?.ts||0;
+              if(Date.now()-lastSuggTs>10*60*1000){ // only suggest every 10 min
+                gpsSpeedSuggestion={kmh:calcSpeed,ts:Date.now()};
+              }
+            }
+          }
+        }
+      }
       renderRideHero();
     },
     err=>{ /* keep last known position if any; hero falls back to schedule-based logic */ },
@@ -1804,6 +1842,23 @@ function nearestRouteKm(lat,lon){
     if(d<best){best=d;bestKm=p.dist/1000;}
   }
   return bestKm;
+}
+
+function adjustRideSpeed(delta){
+  if(rideSpeedOverride===null)rideSpeedOverride=parseFloat(document.getElementById("speed").value)||20;
+  rideSpeedOverride=Math.round((rideSpeedOverride+delta)*10)/10;
+  rideSpeedOverride=Math.max(5,Math.min(60,rideSpeedOverride));
+  renderAll();
+}
+function acceptGpsSpeed(){
+  if(!gpsSpeedSuggestion)return;
+  rideSpeedOverride=gpsSpeedSuggestion.kmh;
+  gpsSpeedSuggestion=null;
+  renderAll();
+}
+function dismissGpsSpeed(){
+  gpsSpeedSuggestion=null;
+  renderRideHero();
 }
 
 function renderRideHero(){
@@ -1890,6 +1945,28 @@ function renderRideHero(){
       </div>`;
     });
     html+=`</div>`;
+  }
+
+  // Speed slider
+  const currentSpeed=rideSpeedOverride!==null?rideSpeedOverride:(parseFloat(document.getElementById("speed").value)||20);
+  html+=`<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap">
+    <button onclick="adjustRideSpeed(-0.5)" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;width:36px;height:36px;font-size:18px;font-weight:700;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">−</button>
+    <div style="text-align:center;min-width:120px">
+      <div style="font-size:11px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.08em">Aktueller Schnitt</div>
+      <div style="font-size:22px;font-weight:900;color:var(--accent);line-height:1.2">${currentSpeed.toFixed(1)} km/h</div>
+    </div>
+    <button onclick="adjustRideSpeed(+0.5)" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;width:36px;height:36px;font-size:18px;font-weight:700;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">+</button>
+  </div>`;
+
+  // GPS speed suggestion
+  if(gpsSpeedSuggestion){
+    html+=`<div style="margin-top:8px;background:rgba(74,158,255,.1);border:1px solid rgba(74,158,255,.25);border-radius:10px;padding:10px 12px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
+      <span style="font-size:12px;color:var(--accent2);font-weight:600">📡 GPS-Schnitt: ${gpsSpeedSuggestion.kmh.toFixed(1)} km/h — übernehmen?</span>
+      <div style="display:flex;gap:6px;flex-shrink:0">
+        <button onclick="acceptGpsSpeed()" style="background:var(--accent2);border:none;border-radius:7px;padding:5px 12px;font-size:12px;font-weight:700;color:#fff;cursor:pointer;font-family:inherit">✓ Ja</button>
+        <button onclick="dismissGpsSpeed()" style="background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:5px 10px;font-size:12px;color:var(--text3);cursor:pointer;font-family:inherit">✕</button>
+      </div>
+    </div>`;
   }
 
   body.innerHTML=html;
@@ -2375,10 +2452,10 @@ function refreshSecHeight(id){
 function difficultyScore(km1, km2){
   const pts = elevGrid.filter(([k])=>k>=km1&&k<=km2);
   if(pts.length<2) return {score:1,stars:"★",label:"leicht",uphillM:0};
-  let uphill=0;
+  let uphill=0,downhill=0;
   for(let i=1;i<pts.length;i++){
     const diff=pts[i][1]-pts[i-1][1];
-    if(diff>0) uphill+=diff;
+    if(diff>0) uphill+=diff; else downhill+=-diff;
   }
   const ratio=uphill/Math.max(km2-km1,1);
   let score,stars,label;
@@ -2387,7 +2464,7 @@ function difficultyScore(km1, km2){
   else if(ratio<15){score=3;stars="★★★";label="anspruchsvoll";}
   else if(ratio<22){score=4;stars="★★★★";label="schwer";}
   else{score=5;stars="★★★★★";label="extrem";}
-  return{score,stars,label,uphillM:Math.round(uphill)};
+  return{score,stars,label,uphillM:Math.round(uphill),downhillM:Math.round(downhill)};
 }
 
 function totalElevation(){
