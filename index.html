@@ -1879,9 +1879,14 @@ function renderRideHero(){
       else if(sRs&&sRs.show&&sRs.open)sCol="#f59e0b";
       if(sWarn.some(w=>w.level==="red"))sCol="#ef4444";
       else if(sWarn.some(w=>w.level==="orange")&&sCol==="#22c55e")sCol="#f59e0b";
+      const sWx=getWxForStop(s);
+      const sWxLabel=sWx?`${WX_ICON[sWx.code]||"🌡"} ${sWx.temp}°`:"";
       html+=`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 4px;${ui===0?"opacity:0.55":""}">
         <span style="font-size:13px;font-weight:700;color:${sCol}">${esc(s.region)}</span>
-        <span style="font-size:12px;color:var(--text3);font-family:monospace">${fmt(s.arrival)}</span>
+        <span style="display:flex;align-items:center;gap:8px">
+          ${sWxLabel?`<span style="font-size:12px;color:var(--text3)">${sWxLabel}</span>`:""}
+          <span style="font-size:12px;color:var(--text3);font-family:monospace">${fmt(s.arrival)}</span>
+        </span>
       </div>`;
     });
     html+=`</div>`;
