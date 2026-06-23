@@ -34,14 +34,15 @@ h1{font-size:22px;font-weight:900;color:#fff;letter-spacing:-0.5px;line-height:1
 /* Cards */
 .card{background:var(--surface);border-radius:16px;border:1px solid var(--border);padding:16px;margin-bottom:12px}
 .card-dark{background:var(--surface2);border-radius:12px;border:1px solid var(--border);padding:12px;margin-bottom:12px}
-.section-title{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.12em;margin-bottom:12px}
+.section-title{font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.11em;margin-bottom:12px}
 /* Plan/Ride mode */
 body.ride-mode .plan-only{display:none!important}
 #ride-hero{display:none}
 body.ride-mode #ride-hero{display:block}
 .sec-hdr{display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;-webkit-user-select:none;padding:2px 0;margin-bottom:0}
 .sec-hdr:active{opacity:.7}
-.chev{font-size:20px;color:var(--text2);transition:transform .22s;line-height:1;flex-shrink:0;margin-left:8px;font-weight:700}
+.sec-hdr .section-title{margin-bottom:0}
+.chev{font-size:18px;color:var(--text2);transition:transform .22s;line-height:1;flex-shrink:0;margin-left:8px;font-weight:700}
 .chev.open{transform:rotate(180deg)}
 .sec-body{overflow:hidden;transition:max-height .28s ease,opacity .2s ease;opacity:1}
 .sec-body.closed{max-height:0!important;opacity:0}
@@ -249,7 +250,7 @@ td input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
 
 <div class="card plan-only" id="params-card">
   <div class="sec-hdr" onclick="toggleSec('params')">
-    <div class="section-title" style="margin-bottom:0">Parameter</div>
+    <div class="section-title" style="margin-bottom:0"><span style="opacity:.5;margin-right:6px;font-size:12px">⚙️</span>Parameter</div>
     <span class="chev open" id="chev-params">▾</span>
   </div>
   <div class="sec-body" id="body-params" style="max-height:600px;margin-top:12px">
@@ -289,7 +290,7 @@ td input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
 
 <div class="card" style="padding:14px 14px 10px">
   <div class="sec-hdr" onclick="toggleSec('chart')">
-    <div class="section-title" style="margin-bottom:0">Höhenprofil</div>
+    <div class="section-title" style="margin-bottom:0"><span style="opacity:.5;margin-right:6px;font-size:12px">📈</span>Höhenprofil</div>
     <span class="chev open" id="chev-chart">▾</span>
   </div>
   <div class="sec-body" id="body-chart" style="max-height:500px;margin-top:10px">
@@ -301,7 +302,7 @@ td input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
 <!-- Karten je Pausenpunkt -->
 <div id="maps-card" class="card" style="display:none">
   <div class="sec-hdr" onclick="toggleSec('maps')">
-    <div class="section-title" style="margin-bottom:0">Karten je Pausenpunkt</div>
+    <div class="section-title" style="margin-bottom:0"><span style="opacity:.5;margin-right:6px;font-size:12px">🗺</span>Karten je Pausenpunkt</div>
     <span class="chev" id="chev-maps">▾</span>
   </div>
   <div class="sec-body closed" id="body-maps" style="max-height:0;margin-top:10px">
@@ -312,13 +313,13 @@ td input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
 <!-- Versorgung -->
 <div id="poi-card" class="card">
   <div class="sec-hdr" onclick="toggleSec('poi')">
-    <div class="section-title" style="margin-bottom:0">Versorgung entlang der Route</div>
+    <div class="section-title" style="margin-bottom:0"><span style="opacity:.5;margin-right:6px;font-size:12px">🏪</span>Versorgung entlang der Route</div>
     <div style="display:flex;align-items:center;gap:8px">
       <button onclick="event.stopPropagation();loadPois()" id="poi-btn" class="btn btn-sm" style="background:#0ea5e9">🔍 Laden</button>
       <span class="chev" id="chev-poi">▾</span>
     </div>
   </div>
-  <button onclick="openEmergencySupply()" style="display:flex;align-items:center;justify-content:center;gap:7px;width:100%;background:linear-gradient(135deg,#ef4444,#dc2626);border:none;border-radius:10px;padding:11px 16px;font-size:13px;font-weight:800;color:#fff;cursor:pointer;font-family:inherit;box-shadow:0 4px 14px rgba(239,68,68,.3);letter-spacing:.02em;margin-top:10px">
+  <button onclick="openEmergencySupply()" style="display:inline-flex;align-items:center;gap:6px;background:#ef4444;border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;color:#fff;cursor:pointer;font-family:inherit;margin-top:8px">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
     Jetzt Versorgung finden
   </button>
@@ -331,7 +332,7 @@ td input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
 <!-- Tabelle -->
 <div class="card" style="padding:0;overflow:hidden">
   <div class="sec-hdr" onclick="toggleSec('table')" style="padding:14px 14px 0">
-    <div class="section-title" style="margin-bottom:0">Etappenplan</div>
+    <div class="section-title" style="margin-bottom:0"><span style="opacity:.5;margin-right:6px;font-size:12px">📋</span>Etappenplan</div>
     <span class="chev open" id="chev-table" style="margin-right:14px">▾</span>
   </div>
   <div class="sec-body" id="body-table" style="max-height:4000px">
@@ -351,7 +352,7 @@ td input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
 <!-- Wetter & Nacht (ausführlich, Icon+Temp stehen bereits im Etappenplan) -->
 <div class="card" id="weather-card">
   <div class="sec-hdr" onclick="toggleSec('weather')">
-    <div class="section-title" style="margin-bottom:0">Wetter & Nacht (Details)</div>
+    <div class="section-title" style="margin-bottom:0"><span style="opacity:.5;margin-right:6px;font-size:12px">🌤</span>Wetter & Nacht (Details)</div>
     <div style="display:flex;align-items:center;gap:8px">
       <button onclick="event.stopPropagation();loadWeather()" id="weather-btn" class="btn btn-sm" style="background:#0ea5e9">☁️ Laden</button>
       <span class="chev" id="chev-weather">▾</span>
@@ -470,7 +471,7 @@ td input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
 <!-- ── Packliste / Taschenplanung ──────────────────────────────────────────── -->
 <div class="card plan-only" id="packlist-card" style="margin-top:4px">
   <div class="sec-hdr" onclick="toggleSec('packlist')">
-    <div class="section-title" style="margin-bottom:0">Packliste & Taschenplanung</div>
+    <div class="section-title" style="margin-bottom:0"><span style="opacity:.5;margin-right:6px;font-size:12px">🎒</span>Packliste & Taschenplanung</div>
     <span class="chev" id="chev-packlist">▾</span>
   </div>
   <div class="sec-body closed" id="body-packlist" style="max-height:0;margin-top:12px">
@@ -1198,14 +1199,29 @@ async function loadPois(){
 );
 out body center;`;
 
+  async function overpassFetch(query){
+    const endpoints=[
+      "https://overpass-api.de/api/interpreter",
+      "https://overpass.kumi.systems/api/interpreter",
+      "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
+    ];
+    for(const url of endpoints){
+      try{
+        const res=await fetch(url,{
+          method:"POST",
+          headers:{"Content-Type":"application/x-www-form-urlencoded"},
+          body:"data="+encodeURIComponent(query),
+          signal:AbortSignal.timeout(20000)
+        });
+        if(!res.ok) continue;
+        return await res.json();
+      }catch(e){ continue; }
+    }
+    throw new Error("Alle Overpass-Server nicht erreichbar. Evtl. CORS bei lokalem Aufruf — am besten über Webserver (GitHub Pages, etc.) öffnen.");
+  }
+
   try{
-    const res=await fetch("https://overpass-api.de/api/interpreter",{
-      method:"POST",
-      headers:{"Content-Type":"application/x-www-form-urlencoded"},
-      body:"data="+encodeURIComponent(query)
-    });
-    if(!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data=await res.json();
+    const data=await overpassFetch(query);
     // dedupe by node id (a POI can match multiple around() clauses if stops are close)
     const seen=new Set();
     const unique=(data.elements||[]).filter(e=>{
@@ -1219,7 +1235,7 @@ out body center;`;
     refreshSecHeight("maps");
   }catch(e){
     document.getElementById("poi-body").innerHTML=
-      `<div style="color:#f87171;font-size:13px">⚠️ ${e.message}</div>`;
+      `<div style="color:#f87171;font-size:12px;line-height:1.5">⚠️ ${e.message}<br><span style="color:var(--text3)">Tipp: Datei über einen Webserver öffnen (nicht per Doppelklick) oder auf GitHub Pages deployen.</span></div>`;
   }finally{btn.textContent="🔍 Neu laden";btn.disabled=false;}
 }
 
@@ -2193,14 +2209,19 @@ async function runEmergencySearch(){
 );
 out body center;`;
 
+  async function overpassFetch2(query){
+    const eps=["https://overpass-api.de/api/interpreter","https://overpass.kumi.systems/api/interpreter","https://maps.mail.ru/osm/tools/overpass/api/interpreter"];
+    for(const url of eps){
+      try{
+        const r=await fetch(url,{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:"data="+encodeURIComponent(query),signal:AbortSignal.timeout(20000)});
+        if(!r.ok)continue;
+        return await r.json();
+      }catch(e){continue;}
+    }
+    throw new Error("Alle Overpass-Server nicht erreichbar");
+  }
   try{
-    const res=await fetch("https://overpass-api.de/api/interpreter",{
-      method:"POST",
-      headers:{"Content-Type":"application/x-www-form-urlencoded"},
-      body:"data="+encodeURIComponent(query)
-    });
-    if(!res.ok)throw new Error(`HTTP ${res.status}`);
-    const data=await res.json();
+    const data=await overpassFetch2(query);
     const now=new Date();
 
     const seen=new Set();
