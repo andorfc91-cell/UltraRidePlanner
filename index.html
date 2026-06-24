@@ -36,9 +36,7 @@ h1{font-size:22px;font-weight:900;color:#fff;letter-spacing:-0.5px;line-height:1
 .card-dark{background:var(--surface2);border-radius:12px;border:1px solid var(--border);padding:12px;margin-bottom:12px}
 .section-title{font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.11em;margin-bottom:12px}
 /* Plan/Ride mode */
-body.ride-mode .plan-only{display:none!important}
 #ride-hero{display:none}
-body.ride-mode #ride-hero{display:block}
 .sec-hdr{display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;-webkit-user-select:none;padding:2px 0;margin-bottom:0}
 .sec-hdr:active{opacity:.7}
 .sec-hdr .section-title{margin-bottom:0}
@@ -127,6 +125,20 @@ td input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
 ::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
 
 /* ── Packliste ── */
+/* ── Ride-Mode Chip Nav ── */
+#ride-chip-nav{display:none}
+body.ride-mode #ride-chip-nav{display:flex}
+body.ride-mode .plan-only{display:none!important}
+body.ride-mode #ride-hero{display:block}
+.ride-chip{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:12px 4px;border:1px solid var(--border);border-radius:14px;background:var(--surface2);color:var(--text3);cursor:pointer;font-family:inherit;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;transition:background .15s,border-color .15s,color .15s;-webkit-tap-highlight-color:transparent;aspect-ratio:1;min-height:72px}
+.ride-chip.active{background:rgba(74,158,255,.18);border-color:var(--accent2);color:var(--accent2)}
+.ride-chip-svg{width:26px;height:26px;flex-shrink:0;stroke:currentColor}
+.ride-chip.active .ride-chip-svg{stroke:var(--accent2)}
+.ride-chip-label{line-height:1;white-space:nowrap;font-size:9px;letter-spacing:.05em}
+#ride-panel-wrap{display:none}
+body.ride-mode #ride-panel-wrap{display:block}
+.ride-panel{display:none}
+.ride-panel.active{display:block}
 /* ── Packliste Two-Panel ── */
 .pack-layout{display:grid;grid-template-columns:1fr 1fr;gap:12px;min-height:420px}
 @media(max-width:640px){.pack-layout{grid-template-columns:1fr}}
@@ -200,34 +212,124 @@ td input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
 <body>
 <div style="max-width:900px;margin:0 auto;padding:16px 14px">
 
-<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">
-  <div style="display:inline-flex;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:4px">
-    <button id="mode-plan-btn" onclick="setAppMode('plan')" style="display:flex;align-items:center;gap:6px;padding:9px 18px;border:none;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;background:var(--accent2);color:#fff">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
-      Planen
-    </button>
-    <button id="mode-ride-btn" onclick="setAppMode('ride')" style="display:flex;align-items:center;gap:6px;padding:9px 18px;border:none;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;background:transparent;color:var(--text2)">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="18.5" cy="17.5" r="3.5"/><path d="M15 6a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm-3 11.5V14l-3-3 4-3 2 3h2"/></svg>
-      Fahren
+<!-- Top bar: minimal, unobtrusive -->
+<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px">
+  <div style="display:flex;align-items:center;gap:6px">
+    <span style="font-size:11px;color:var(--accent);font-weight:700;text-transform:uppercase;letter-spacing:.12em">🚴 URP</span>
+    <div style="display:inline-flex;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:3px;gap:1px">
+      <button id="mode-plan-btn" onclick="setAppMode('plan')"
+        style="display:flex;align-items:center;gap:4px;padding:5px 11px;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;background:var(--accent2);color:#fff;line-height:1">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+        Planen
+      </button>
+      <button id="mode-ride-btn" onclick="setAppMode('ride')"
+        style="display:flex;align-items:center;gap:4px;padding:5px 11px;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;background:transparent;color:var(--text3);line-height:1">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="18.5" cy="17.5" r="3.5"/><path d="M15 6a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm-3 11.5V14l-3-3 4-3 2 3h2"/></svg>
+        Fahren
+      </button>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;gap:8px">
+    <h1 id="route-name" style="font-size:15px;font-weight:800;color:var(--text)">Variante Berlin 2</h1>
+    <button onclick="openProjects()" title="Projekte"
+      style="display:flex;align-items:center;justify-content:center;width:30px;height:30px;border:1px solid var(--border);border-radius:8px;background:var(--surface2);cursor:pointer;color:var(--text3);flex-shrink:0">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
     </button>
   </div>
-  <button class="btn" style="background:var(--surface2);border:1px solid var(--border)" onclick="openProjects()">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-    Projekte
-  </button>
 </div>
-
-<div style="margin-bottom:14px">
-  <div style="font-size:10px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.15em;margin-bottom:4px">🚴 Ultra Ride Planner</div>
-  <h1 id="route-name" style="font-size:19px">Variante Berlin 2</h1>
-  <div class="sub" id="route-sub">654 km · wird berechnet…</div>
-</div>
+<div class="sub plan-only" id="route-sub" style="margin-bottom:12px;margin-top:-8px">654 km · wird berechnet…</div>
 
 <div id="ride-hero" class="card" style="background:linear-gradient(160deg,var(--surface2),var(--surface));border:1px solid var(--border);margin-bottom:14px">
   <div id="ride-hero-body">
     <div style="text-align:center;padding:20px 0;color:var(--text3);font-size:13px">📍 Standort wird ermittelt…</div>
   </div>
 </div>
+
+<!-- Ride-mode chip navigation -->
+<div id="ride-chip-nav" style="display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin-bottom:10px">
+  <button class="ride-chip active" id="chip-etappen" onclick="setRidePanel('etappen')">
+    <svg class="ride-chip-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><polyline points="3 6 4 7 6 5"/><polyline points="3 12 4 13 6 11"/><polyline points="3 18 4 19 6 17"/></svg>
+    <span class="ride-chip-label">Etappen</span>
+  </button>
+  <button class="ride-chip" id="chip-pause" onclick="setRidePanel('pause')">
+    <svg class="ride-chip-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="10" y1="15" x2="10" y2="9"/><line x1="14" y1="15" x2="14" y2="9"/></svg>
+    <span class="ride-chip-label">+ Stopp</span>
+  </button>
+  <button class="ride-chip" id="chip-versorgung" onclick="setRidePanel('versorgung')">
+    <svg class="ride-chip-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+    <span class="ride-chip-label">Versorg.</span>
+  </button>
+  <button class="ride-chip" id="chip-wetter" onclick="setRidePanel('wetter')">
+    <svg class="ride-chip-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9z"/></svg>
+    <span class="ride-chip-label">Wetter</span>
+  </button>
+  <button class="ride-chip" id="chip-profil" onclick="setRidePanel('profil')">
+    <svg class="ride-chip-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    <span class="ride-chip-label">Profil</span>
+  </button>
+</div>
+
+<!-- Ride-mode panels (one visible at a time) -->
+<div id="ride-panel-wrap">
+
+  <div class="ride-panel card active" id="rpanel-etappen" style="padding:0;overflow:hidden">
+    <div class="tbl-wrap">
+      <table id="main-table-ride" style="width:100%">
+        <thead><tr>
+          <th>#</th><th>Ort</th><th>km</th><th>↑hm</th><th>Ankunft</th><th>Pause</th>
+        </tr></thead>
+        <tbody id="tbl-body-ride"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="ride-panel card" id="rpanel-pause">
+    <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px">⏸ Pause hinzufügen</div>
+    <div style="display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap">
+      <div>
+        <label>Bei km</label>
+        <div class="num-wrap"><input type="number" id="ride-add-km" min="1" max="9999" step="1" placeholder="km"/></div>
+      </div>
+      <div>
+        <label>Pause (min)</label>
+        <div class="num-wrap"><input type="number" id="ride-add-pause" min="5" max="600" step="5" value="25"/></div>
+      </div>
+      <div style="flex:1;min-width:120px">
+        <label>Region / Ort</label>
+        <input type="text" id="ride-add-region" placeholder="optional" style="width:100%;font-size:13px;padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-family:inherit"/>
+      </div>
+      <button onclick="rideAddStop()" class="btn" style="background:var(--accent2);color:#fff;white-space:nowrap;height:38px">+ Hinzufügen</button>
+    </div>
+    <div id="ride-add-err" style="color:#f87171;font-size:11px;margin-top:8px"></div>
+  </div>
+
+  <div class="ride-panel card" id="rpanel-versorgung">
+    <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">🏪 Versorgung</div>
+    <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+      <button onclick="event.stopPropagation();loadPois()" id="poi-btn-ride" class="btn btn-sm" style="background:#0ea5e9">🔍 Neu laden</button>
+      <button onclick="openEmergencySupply()" style="display:inline-flex;align-items:center;gap:6px;background:#ef4444;border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;color:#fff;cursor:pointer;font-family:inherit">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        Notfall
+      </button>
+    </div>
+    <div id="poi-body-ride" style="font-size:12px;color:var(--text3)">GPX laden, dann Versorgung suchen</div>
+  </div>
+
+  <div class="ride-panel card" id="rpanel-wetter">
+    <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">🌤 Wetter</div>
+    <div style="margin-bottom:10px">
+      <button onclick="event.stopPropagation();loadWeather()" id="weather-btn-ride" class="btn btn-sm" style="background:#0ea5e9">☁️ Laden</button>
+    </div>
+    <div id="weather-body-ride" style="font-size:12px;color:var(--text3)">GPX importieren, dann Laden</div>
+  </div>
+
+  <div class="ride-panel card" id="rpanel-profil">
+    <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">📈 Höhenprofil</div>
+    <div id="chart-wrap-ride"><svg id="chart-svg-ride" style="width:100%;height:120px"></svg></div>
+    <div style="font-size:10px;color:var(--text3);text-align:center;margin-top:6px">Tippe auf die Kurve → Zeile markieren</div>
+  </div>
+
+</div><!-- end ride-panel-wrap -->
 
 <div class="plan-only" style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:14px;flex-wrap:wrap">
   <button onclick="if(confirm('Gespeicherten Stand löschen?')){clearState();location.reload();}" style="background:none;border:none;font-size:10px;color:var(--text3);cursor:pointer;padding:0;font-family:inherit">↺ Neu starten</button>
@@ -1900,16 +2002,19 @@ let rideCurrentPos=null; // {lat, lon}
 function setAppMode(mode){
   appMode=mode;
   document.body.classList.toggle("ride-mode", mode==="ride");
+  if(mode==="ride"){ renderRideTable(); setRidePanel(_ridePanel||"etappen"); }
   const planBtn=document.getElementById("mode-plan-btn");
   const rideBtn=document.getElementById("mode-ride-btn");
   if(mode==="ride"){
-    planBtn.style.background="transparent";planBtn.style.color="var(--text2)";
+    planBtn.style.background="transparent";planBtn.style.color="var(--text3)";
     rideBtn.style.background="var(--accent2)";rideBtn.style.color="#fff";
     startRideTracking();
+    document.getElementById("route-sub").style.display="none";
   } else {
     rideBtn.style.background="transparent";rideBtn.style.color="var(--text2)";
     planBtn.style.background="var(--accent2)";planBtn.style.color="#fff";
     stopRideTracking();
+    document.getElementById("route-sub").style.display="";
   }
   try{localStorage.setItem("urp_app_mode",mode);}catch(e){}
 }
@@ -2036,27 +2141,68 @@ function renderRideHero(){
   const wxIcon=wx?(WX_ICON[wx.code]||"🌡"):"";
   const distKm=currentKm!==null?Math.max(0,Math.round(next.km-currentKm)):null;
 
-  let html=`
-    <div style="text-align:center;padding:6px 0 4px">
-      <div style="font-size:11px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">${distKm!==null?`Nächster Stopp · noch ~${distKm} km`:"Nächster geplanter Stopp"}</div>
-      <div style="font-size:26px;font-weight:900;color:${ampelColor};line-height:1.15;letter-spacing:-0.3px">${esc(next.region)}</div>
-      <div style="display:flex;justify-content:center;gap:14px;margin-top:8px;flex-wrap:wrap">
-        <span style="font-size:14px;color:var(--text2);font-weight:700">${fmt(next.arrival)}</span>
-        ${next.pause?`<span style="font-size:14px;color:var(--text2)">⏸ ${next.pause} Min</span>`:""}
-        ${wxIcon?`<span style="font-size:14px">${wxIcon} ${wx.temp}°</span>`:""}
-        ${dark?`<span style="font-size:14px">🌙</span>`:`<span style="font-size:14px">☀️</span>`}
-      </div>
-    </div>`;
+  // ── Höhenmeter für nächstes Segment ──────────────────────────────────────
+  function segmentElevGain(fromKm, toKm){
+    if(!elevGrid||elevGrid.length<2) return null;
+    let up=0, down=0, prev=null;
+    for(const [g,e] of elevGrid){
+      if(g<fromKm) {prev=e; continue;}
+      if(g>toKm) break;
+      if(prev!==null){ const d=e-prev; if(d>0)up+=d; else down+=-d; }
+      prev=e;
+    }
+    return {up:Math.round(up), down:Math.round(down)};
+  }
 
-  // 2-3 upcoming stops preview
-  const upcoming=computed.slice(nextIdx, nextIdx+3);
-  if(upcoming.length>1){
-    html+=`<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border)">`;
+  const prevStop = nextIdx>0 ? computed[nextIdx-1] : null;
+  const segFromKm = prevStop ? prevStop.km : (currentKm||0);
+  const segElev = segmentElevGain(segFromKm, next.km);
+  const segDist = prevStop ? (next.km - prevStop.km) : (distKm !== null ? distKm : null);
+
+  // ── HERO: Nächster Stopp ────────────────────────────────────────────────
+  let html=`
+  <div style="text-align:center;padding:4px 0 2px">
+    <div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.12em;margin-bottom:4px">
+      ${distKm!==null?`noch ~${distKm} km`:"Nächster geplanter Stopp"}
+    </div>
+    <div style="font-size:34px;font-weight:900;color:${ampelColor};line-height:1.1;letter-spacing:-0.5px">${esc(next.region)}</div>
+
+    <div style="display:flex;justify-content:center;align-items:center;gap:12px;margin-top:10px;flex-wrap:wrap">
+      <span style="font-size:20px;color:var(--text);font-weight:800;font-family:monospace">${fmt(next.arrival)}</span>
+      ${dark?`<span style="font-size:18px">🌙</span>`:`<span style="font-size:18px">☀️</span>`}
+      ${wxIcon?`<span style="font-size:15px;color:var(--text2)">${wxIcon} ${wx.temp}°</span>`:""}
+    </div>
+
+    <!-- Segment stats row -->
+    <div style="display:flex;justify-content:center;gap:16px;margin-top:12px;flex-wrap:wrap">
+      ${segDist!==null?`<div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:6px 14px;text-align:center">
+        <div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.08em">Distanz</div>
+        <div style="font-size:17px;font-weight:800;color:var(--text);margin-top:1px">${segDist} km</div>
+      </div>`:""}
+      ${segElev?`<div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:6px 14px;text-align:center">
+        <div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.08em">Höhenmeter</div>
+        <div style="font-size:17px;font-weight:800;color:var(--text);margin-top:1px">▲${segElev.up} <span style="font-size:12px;color:var(--text3)">▼${segElev.down}</span></div>
+      </div>`:""}
+      ${next.pause?`<div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:6px 12px;text-align:center" id="pause-tile-${nextIdx}">
+        <div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.08em">Pause</div>
+        <div style="display:flex;align-items:center;gap:4px;margin-top:2px">
+          <button onclick="adjustStopPause(${nextIdx},-5)" style="width:24px;height:24px;border:1px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text);font-size:14px;font-weight:700;cursor:pointer;line-height:1;padding:0;flex-shrink:0">−</button>
+          <span style="font-size:17px;font-weight:800;color:var(--accent);min-width:44px;text-align:center">${next.pause}m</span>
+          <button onclick="adjustStopPause(${nextIdx},+5)" style="width:24px;height:24px;border:1px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text);font-size:14px;font-weight:700;cursor:pointer;line-height:1;padding:0;flex-shrink:0">+</button>
+        </div>
+      </div>`:""}
+    </div>
+  </div>`;
+
+  // ── Upcoming stops (next 3 after hero) ──────────────────────────────────
+  const upcoming = computed.slice(nextIdx+1, nextIdx+4);
+  if(upcoming.length){
+    html+=`<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border)">`;
     upcoming.forEach((s,ui)=>{
-      const i=nextIdx+ui;
-      const isFirst=i===0, isLast=i===computed.length-1;
+      const i=nextIdx+1+ui;
+      const isLast=i===computed.length-1;
       const sDark=isDark(s.arrival);
-      const sRs=(!isFirst&&!isLast)?resupplyStatus(s.arrival):null;
+      const sRs=(!isLast)?resupplyStatus(s.arrival):null;
       const sWarn=getStopWarnings(s,i,computed);
       let sCol="#22c55e";
       if(sDark&&sRs&&!sRs.open)sCol="#ef4444";
@@ -2067,42 +2213,61 @@ function renderRideHero(){
       else if(sWarn.some(w=>w.level==="orange")&&sCol==="#22c55e")sCol="#f59e0b";
       const sWx=getWxForStop(s);
       const sWxLabel=sWx?`${WX_ICON[sWx.code]||"🌡"} ${sWx.temp}°`:"";
-      html+=`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 4px;${ui===0?"opacity:0.55":""}">
-        <span style="font-size:13px;font-weight:700;color:${sCol}">${esc(s.region)}</span>
-        <span style="display:flex;align-items:center;gap:8px">
-          ${sWxLabel?`<span style="font-size:12px;color:var(--text3)">${sWxLabel}</span>`:""}
-          <span style="font-size:12px;color:var(--text3);font-family:monospace">${fmt(s.arrival)}</span>
-        </span>
+      const segE=segmentElevGain(computed[i-1]?.km||0, s.km);
+      const segD=s.km-(computed[i-1]?.km||0);
+      html+=`<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 2px;border-bottom:1px solid rgba(45,63,94,.4)">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:14px;font-weight:800;color:${sCol}">${esc(s.region)}</span>
+          ${sDark?'<span style="font-size:11px">🌙</span>':''}
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+          ${segE?`<span style="font-size:10px;color:var(--text3)">▲${segE.up}</span>`:""}
+          <span style="font-size:11px;color:var(--text3)">${Math.round(segD)} km</span>
+          ${sWxLabel?`<span style="font-size:11px;color:var(--text3)">${sWxLabel}</span>`:""}
+          <span style="font-size:12px;color:var(--text2);font-family:monospace;font-weight:600">${fmt(s.arrival)}</span>
+        </div>
       </div>`;
     });
     html+=`</div>`;
   }
 
-  // ── Speed slider ────────────────────────────────────────────────────────────
+  // ── Bottom bar: Speed + GPS + Notfall ──────────────────────────────────
   const curSpeed=getRideSpeed();
   html+=`
-    <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border)">
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
-        <span style="font-size:11px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.08em;white-space:nowrap">Ø Schnitt</span>
-        <div style="display:flex;align-items:center;gap:6px">
-          <button onclick="setRideSpeed(${(curSpeed-0.5).toFixed(1)})" style="width:32px;height:32px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:18px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1">−</button>
-          <span style="font-size:16px;font-weight:800;color:var(--accent);min-width:64px;text-align:center">${curSpeed.toFixed(1)} km/h</span>
-          <button onclick="setRideSpeed(${(curSpeed+0.5).toFixed(1)})" style="width:32px;height:32px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:18px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1">+</button>
-        </div>
-      </div>`;
+  <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+    <span style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.08em;flex-shrink:0">Ø Schnitt</span>
+    <div style="display:flex;align-items:center;gap:5px;flex:1;justify-content:center">
+      <button onclick="setRideSpeed(${(curSpeed-0.5).toFixed(1)})" style="width:30px;height:30px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:17px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;padding:0">−</button>
+      <span style="font-size:15px;font-weight:800;color:var(--accent);min-width:60px;text-align:center">${curSpeed.toFixed(1)} km/h</span>
+      <button onclick="setRideSpeed(${(curSpeed+0.5).toFixed(1)})" style="width:30px;height:30px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:17px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;padding:0">+</button>
+    </div>
+    <button onclick="openEmergencySupply()" style="display:flex;align-items:center;gap:5px;background:#ef4444;border:none;border-radius:8px;padding:7px 12px;font-size:12px;font-weight:700;color:#fff;cursor:pointer;font-family:inherit;flex-shrink:0">
+      🏪 Notfall
+    </button>
+  </div>`;
 
-  // GPS speed suggestion banner
+  // GPS speed suggestion
   if(_gpsSpeedSuggestion!==null){
     html+=`
-      <div style="margin-top:8px;display:flex;align-items:center;justify-content:space-between;gap:8px;background:rgba(74,158,255,.1);border:1px solid rgba(74,158,255,.25);border-radius:8px;padding:7px 10px">
-        <span style="font-size:12px;color:#93c5fd;font-weight:600">📡 GPS-Schnitt: ${_gpsSpeedSuggestion.toFixed(1)} km/h — übernehmen?</span>
-        <button onclick="_rideAcceptGpsSpeed()" style="border:none;background:var(--accent2);color:#fff;border-radius:7px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">✓ Ja</button>
-      </div>`;
+    <div style="margin-top:8px;display:flex;align-items:center;justify-content:space-between;gap:8px;background:rgba(74,158,255,.1);border:1px solid rgba(74,158,255,.25);border-radius:8px;padding:7px 10px">
+      <span style="font-size:12px;color:#93c5fd;font-weight:600">📡 GPS-Schnitt: ${_gpsSpeedSuggestion.toFixed(1)} km/h — übernehmen?</span>
+      <button onclick="_rideAcceptGpsSpeed()" style="border:none;background:var(--accent2);color:#fff;border-radius:7px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">✓ Ja</button>
+    </div>`;
   }
 
-  html+=`</div>`;
-
   body.innerHTML=html;
+}
+
+function adjustStopPause(stopIdx, deltMin){
+  const computed=computeSchedule();
+  if(!computed[stopIdx]) return;
+  const stopKm=computed[stopIdx].km;
+  // find matching stop in stops array
+  const si=stops.findIndex(s=>Math.abs(s.km-stopKm)<0.5);
+  if(si<0) return;
+  const cur=stops[si].pause||25;
+  stops[si].pause=Math.max(5, Math.round(cur+deltMin));
+  renderTable(); saveState(); updateRideHero();
 }
 
 
@@ -3002,6 +3167,99 @@ function initPacklistIfNeeded(){
   if(!packBags)loadPackData();
   renderPackUI();
 }
+
+// ── Ride-Mode Panel switching ─────────────────────────────────────────────────
+let _ridePanel = "etappen";
+
+function setRidePanel(id){
+  _ridePanel = id;
+  // update chips
+  document.querySelectorAll(".ride-chip").forEach(c=>{
+    c.classList.toggle("active", c.id==="chip-"+id);
+  });
+  // show/hide panels
+  document.querySelectorAll(".ride-panel").forEach(p=>{
+    p.classList.toggle("active", p.id==="rpanel-"+id);
+  });
+  // lazy init
+  if(id==="etappen") renderRideTable();
+  if(id==="profil") renderAll(); // reuse chart
+
+}
+
+function renderRideTable(){
+  const computed=computeSchedule();
+  const body=document.getElementById("tbl-body-ride");
+  if(!body||!computed.length) return;
+  body.innerHTML=computed.map((s,i)=>{
+    const isFirst=i===0, isLast=i===computed.length-1;
+    const dark=isDark(s.arrival);
+    const rs=(!isFirst&&!isLast)?resupplyStatus(s.arrival):null;
+    let col="#22c55e";
+    if(dark&&rs&&!rs.open) col="#ef4444";
+    else if(dark) col="#94a3b8";
+    else if(rs&&!rs.open) col="#ef4444";
+    else if(rs&&rs.show&&rs.open) col="#f59e0b";
+    // elevation for segment
+    const prevKm=i>0?computed[i-1].km:0;
+    let hmUp=0;
+    if(elevGrid&&elevGrid.length>1){
+      let prev=null;
+      for(const[g,e] of elevGrid){
+        if(g<prevKm){prev=e;continue;}
+        if(g>s.km) break;
+        if(prev!==null&&e>prev) hmUp+=e-prev;
+        prev=e;
+      }
+    }
+    return `<tr>
+      <td style="color:var(--text3);font-size:11px">${i+1}</td>
+      <td style="font-weight:700;color:${col}">${esc(s.region)}${dark?" 🌙":""}</td>
+      <td style="color:var(--text2)">${s.km}</td>
+      <td style="color:var(--text3);font-size:11px">${hmUp>0?"▲"+Math.round(hmUp):""}</td>
+      <td style="font-family:monospace;color:var(--text2);font-size:12px">${fmt(s.arrival)}</td>
+      <td style="color:var(--text3);font-size:11px">${s.pause?s.pause+"m":""}</td>
+    </tr>`;
+  }).join("");
+}
+
+function rideAddStop(){
+  const kmEl=document.getElementById("ride-add-km");
+  const pauseEl=document.getElementById("ride-add-pause");
+  const regionEl=document.getElementById("ride-add-region");
+  const errEl=document.getElementById("ride-add-err");
+  const km=parseFloat(kmEl.value);
+  const pause=parseInt(pauseEl.value)||25;
+  if(!km||km<0){errEl.textContent="Bitte km eingeben";return;}
+  const totalKm=stops.length?Math.max(...stops.map(s=>s.km)):0;
+  if(km>totalKm+50){errEl.textContent="km liegt außerhalb der Route";return;}
+  if(stops.some(s=>Math.abs(s.km-km)<0.5)){errEl.textContent=`Bei km ${km} gibt es bereits einen Stopp`;return;}
+  errEl.textContent="";
+  stops.push({km,pause,region:regionEl.value.trim()||"",dir:""});
+  stops.sort((a,b)=>a.km-b.km);
+  renderTable(); saveState(); updateRideHero(); renderRideTable();
+  kmEl.value=""; regionEl.value="";
+}
+
+// Also sync poi-btn-ride and weather-btn-ride clicks to update main bodies
+document.addEventListener("DOMContentLoaded",()=>{
+  // mirror poi body to ride panel
+  const obs=new MutationObserver(()=>{
+    const rideBody=document.getElementById("poi-body-ride");
+    const mainBody=document.getElementById("poi-body");
+    if(rideBody&&mainBody) rideBody.innerHTML=mainBody.innerHTML;
+  });
+  const mainPoi=document.getElementById("poi-body");
+  if(mainPoi) obs.observe(mainPoi,{childList:true,subtree:true,characterData:true});
+
+  const obs2=new MutationObserver(()=>{
+    const rideBody=document.getElementById("weather-body-ride");
+    const mainBody=document.getElementById("weather-body");
+    if(rideBody&&mainBody) rideBody.innerHTML=mainBody.innerHTML;
+  });
+  const mainWx=document.getElementById("weather-body");
+  if(mainWx) obs2.observe(mainWx,{childList:true,subtree:true,characterData:true});
+});
 
 // ── Events ────────────────────────────────────────────────────────────────────
 document.getElementById("gpx-btn").onclick=()=>document.getElementById("gpx-file").click();
