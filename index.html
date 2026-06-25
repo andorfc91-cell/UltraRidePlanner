@@ -329,10 +329,8 @@ body.ride-mode #ride-panel-wrap{display:block}
     <div id="weather-body-ride" style="font-size:12px;color:var(--text3)">GPX importieren, dann Laden</div>
   </div>
 
-  <div class="ride-panel card" id="rpanel-profil">
-    <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">📈 Höhenprofil</div>
-    <div id="chart-wrap-ride"><svg id="chart-svg-ride" style="width:100%;height:120px"></svg></div>
-    <div style="font-size:10px;color:var(--text3);text-align:center;margin-top:6px">Tippe auf die Kurve → Zeile markieren</div>
+  <div class="ride-panel" id="rpanel-profil" style="margin-bottom:10px">
+    <!-- reuse the real chart card from plan view — move it here when active -->
   </div>
 
 </div><!-- end ride-panel-wrap -->
@@ -396,7 +394,8 @@ body.ride-mode #ride-panel-wrap{display:block}
   </div>
 </div>
 
-<div class="card" style="padding:14px 14px 10px">
+<div id="chart-card-sentinel"></div>
+<div class="card plan-only" id="chart-card" style="padding:14px 14px 10px">
   <div class="sec-hdr" onclick="toggleSec('chart')">
     <div class="section-title" style="margin-bottom:0"><span style="opacity:.5;margin-right:6px;font-size:12px">📈</span>Höhenprofil</div>
     <span class="chev open" id="chev-chart">▾</span>
@@ -2021,6 +2020,14 @@ function setAppMode(mode){
     planBtn.style.background="var(--accent2)";planBtn.style.color="#fff";
     stopRideTracking();
     document.getElementById("route-sub").style.display="";
+    // Return chart card to plan view if it was moved
+    const cc=document.getElementById("chart-card");
+    const sentinel=document.getElementById("chart-card-sentinel");
+    if(cc&&sentinel&&!cc.classList.contains("plan-only")){
+      cc.classList.add("plan-only");
+      cc.style.margin="";
+      sentinel.after(cc);
+    }
   }
   try{localStorage.setItem("urp_app_mode",mode);}catch(e){}
 }
@@ -3190,7 +3197,17 @@ function setRidePanel(id){
   });
   // lazy init
   if(id==="etappen") renderRideTable();
-  if(id==="profil") renderAll(); // reuse chart
+  if(id==="profil"){
+    // Move the real chart card into the ride profil panel
+    const chartCard=document.getElementById("chart-card");
+    const rPanel=document.getElementById("rpanel-profil");
+    if(chartCard&&rPanel&&!rPanel.contains(chartCard)){
+      rPanel.appendChild(chartCard);
+      chartCard.classList.remove("plan-only");
+      chartCard.style.margin="0";
+    }
+    renderAll();
+  }
 
 }
 
