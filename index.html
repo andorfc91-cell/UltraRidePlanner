@@ -127,14 +127,16 @@ td input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
 /* ── Packliste ── */
 /* ── Ride-Mode Chip Nav ── */
 #ride-chip-nav{display:none}
-body.ride-mode #ride-chip-nav{display:flex}
+body.ride-mode #ride-chip-nav{display:block}
 body.ride-mode .plan-only{display:none!important}
 body.ride-mode #ride-hero{display:block}
-.ride-chip{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:12px 4px;border:1px solid var(--border);border-radius:14px;background:var(--surface2);color:var(--text3);cursor:pointer;font-family:inherit;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;transition:background .15s,border-color .15s,color .15s;-webkit-tap-highlight-color:transparent;aspect-ratio:1;min-height:72px}
+.ride-chip-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.ride-chip-grid-bot{display:grid;grid-template-columns:repeat(2,1fr);gap:7px;margin-top:7px}
+.ride-chip{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;padding:13px 8px;border:1px solid var(--border);border-radius:14px;background:var(--surface2);color:var(--text3);cursor:pointer;font-family:inherit;font-weight:800;text-transform:uppercase;letter-spacing:.06em;transition:background .15s,border-color .15s,color .15s;-webkit-tap-highlight-color:transparent;width:100%}
 .ride-chip.active{background:rgba(74,158,255,.18);border-color:var(--accent2);color:var(--accent2)}
 .ride-chip-svg{width:26px;height:26px;flex-shrink:0;stroke:currentColor}
 .ride-chip.active .ride-chip-svg{stroke:var(--accent2)}
-.ride-chip-label{line-height:1;white-space:nowrap;font-size:9px;letter-spacing:.05em}
+.ride-chip-label{line-height:1;white-space:nowrap;font-size:10px;letter-spacing:.05em}
 #ride-panel-wrap{display:none}
 body.ride-mode #ride-panel-wrap{display:block}
 .ride-panel{display:none}
@@ -245,28 +247,32 @@ body.ride-mode #ride-panel-wrap{display:block}
   </div>
 </div>
 
-<!-- Ride-mode chip navigation -->
-<div id="ride-chip-nav" style="display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin-bottom:10px">
-  <button class="ride-chip active" id="chip-etappen" onclick="setRidePanel('etappen')">
-    <svg class="ride-chip-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><polyline points="3 6 4 7 6 5"/><polyline points="3 12 4 13 6 11"/><polyline points="3 18 4 19 6 17"/></svg>
-    <span class="ride-chip-label">Etappen</span>
-  </button>
-  <button class="ride-chip" id="chip-pause" onclick="setRidePanel('pause')">
-    <svg class="ride-chip-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="10" y1="15" x2="10" y2="9"/><line x1="14" y1="15" x2="14" y2="9"/></svg>
-    <span class="ride-chip-label">+ Stopp</span>
-  </button>
-  <button class="ride-chip" id="chip-versorgung" onclick="setRidePanel('versorgung')">
-    <svg class="ride-chip-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
-    <span class="ride-chip-label">Versorg.</span>
-  </button>
-  <button class="ride-chip" id="chip-wetter" onclick="setRidePanel('wetter')">
-    <svg class="ride-chip-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9z"/></svg>
-    <span class="ride-chip-label">Wetter</span>
-  </button>
-  <button class="ride-chip" id="chip-profil" onclick="setRidePanel('profil')">
-    <svg class="ride-chip-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-    <span class="ride-chip-label">Profil</span>
-  </button>
+<!-- Ride-mode chip navigation: 3+2 grid -->
+<div id="ride-chip-nav" style="margin-bottom:10px">
+  <div class="ride-chip-grid">
+    <button class="ride-chip active" id="chip-etappen" onclick="setRidePanel('etappen')">
+      <svg class="ride-chip-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><polyline points="3 6 4 7 6 5"/><polyline points="3 12 4 13 6 11"/><polyline points="3 18 4 19 6 17"/></svg>
+      <span class="ride-chip-label">Etappen</span>
+    </button>
+    <button class="ride-chip" id="chip-pause" onclick="setRidePanel('pause')">
+      <svg class="ride-chip-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="10" y1="15" x2="10" y2="9"/><line x1="14" y1="15" x2="14" y2="9"/></svg>
+      <span class="ride-chip-label">+ Stopp</span>
+    </button>
+    <button class="ride-chip" id="chip-versorgung" onclick="setRidePanel('versorgung')">
+      <svg class="ride-chip-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+      <span class="ride-chip-label">Versorgung</span>
+    </button>
+  </div>
+  <div class="ride-chip-grid-bot">
+    <button class="ride-chip" id="chip-wetter" onclick="setRidePanel('wetter')">
+      <svg class="ride-chip-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9z"/></svg>
+      <span class="ride-chip-label">Wetter</span>
+    </button>
+    <button class="ride-chip" id="chip-profil" onclick="setRidePanel('profil')">
+      <svg class="ride-chip-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      <span class="ride-chip-label">Höhenprofil</span>
+    </button>
+  </div>
 </div>
 
 <!-- Ride-mode panels (one visible at a time) -->
@@ -307,9 +313,9 @@ body.ride-mode #ride-panel-wrap{display:block}
     <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">🏪 Versorgung</div>
     <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
       <button onclick="event.stopPropagation();loadPois()" id="poi-btn-ride" class="btn btn-sm" style="background:#0ea5e9">🔍 Neu laden</button>
-      <button onclick="openEmergencySupply()" style="display:inline-flex;align-items:center;gap:6px;background:#ef4444;border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;color:#fff;cursor:pointer;font-family:inherit">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-        Notfall
+      <button onclick="openEmergencySupply()" style="display:inline-flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:11px;font-weight:700;color:var(--text2);cursor:pointer;font-family:inherit;letter-spacing:.04em">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+        Versorgung suchen
       </button>
     </div>
     <div id="poi-body-ride" style="font-size:12px;color:var(--text3)">GPX laden, dann Versorgung suchen</div>
@@ -421,9 +427,9 @@ body.ride-mode #ride-panel-wrap{display:block}
       <span class="chev" id="chev-poi">▾</span>
     </div>
   </div>
-  <button onclick="openEmergencySupply()" style="display:inline-flex;align-items:center;gap:6px;background:#ef4444;border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;color:#fff;cursor:pointer;font-family:inherit;margin-top:8px">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-    Jetzt Versorgung finden
+  <button onclick="openEmergencySupply()" style="display:inline-flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:11px;font-weight:700;color:var(--text2);cursor:pointer;font-family:inherit;margin-top:8px;letter-spacing:.04em">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+    Versorgung suchen
   </button>
   <div class="sec-body closed" id="body-poi" style="max-height:0;margin-top:10px">
     <div id="poi-filters" style="display:none;flex-wrap:wrap;gap:6px;margin-bottom:12px"></div>
@@ -2241,8 +2247,9 @@ function renderRideHero(){
       <span style="font-size:15px;font-weight:800;color:var(--accent);min-width:60px;text-align:center">${curSpeed.toFixed(1)} km/h</span>
       <button onclick="setRideSpeed(${(curSpeed+0.5).toFixed(1)})" style="width:30px;height:30px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:17px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;padding:0">+</button>
     </div>
-    <button onclick="openEmergencySupply()" style="display:flex;align-items:center;gap:5px;background:#ef4444;border:none;border-radius:8px;padding:7px 12px;font-size:12px;font-weight:700;color:#fff;cursor:pointer;font-family:inherit;flex-shrink:0">
-      🏪 Notfall
+    <button onclick="openEmergencySupply()" style="display:flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:7px 13px;font-size:11px;font-weight:700;color:var(--text2);cursor:pointer;font-family:inherit;flex-shrink:0;letter-spacing:.04em">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+      Versorgung
     </button>
   </div>`;
 
