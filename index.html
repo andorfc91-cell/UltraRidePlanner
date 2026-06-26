@@ -997,8 +997,8 @@ function drawChart(computed){
       svg+=`<circle cx="${rx}" cy="${ry}" r="6" fill="rgba(74,158,255,0.3)" stroke="none"/>`;
       // position dot
       svg+=`<circle cx="${rx}" cy="${ry}" r="4" fill="#4a9eff" stroke="#fff" stroke-width="1.5"/>`;
-      // tiny cyclist icon above dot
-      svg+=`<text x="${rx}" y="${ry-14}" text-anchor="middle" font-size="14" dominant-baseline="middle">🚴</text>`;
+      // tiny cyclist icon above dot — flipped to face right
+      svg+=`<g transform="translate(${rx},${ry-14}) scale(-1,1)"><text x="0" y="0" text-anchor="middle" font-size="14" dominant-baseline="middle">🚴</text></g>`;
       // vertical guide line
       svg+=`<line x1="${rx}" y1="${PAD.top}" x2="${rx}" y2="${ry-4}" stroke="#4a9eff" stroke-width="1" stroke-dasharray="3,3" opacity="0.5"/>`;
     }
@@ -3538,24 +3538,41 @@ async function loadEmergencyPOIs(){
   const results=document.getElementById("sos-results");
   if(!results) return;
 
-  // Determine search center: GPS position or midpoint of current route segment
-  let lat, lon;
+  if(btn){ btn.textContent="…"; btn.disabled=true; }
+  results.innerHTML=`<div style="font-size:11px;color:var(--text3);text-align:center;padding:16px">Position bestimmen…</div>`;
+
+  // Determine search center — priority: GPS ride position → browser geolocation → route start
+  let lat, lon, locSource="";
+
   if(rideCurrentPos){
-    lat=rideCurrentPos.lat; lon=rideCurrentPos.lon;
+    lat=rideCurrentPos.lat; lon=rideCurrentPos.lon; locSource="GPS";
   } else {
-    // fallback: midpoint of rawTrackPts
-    if(!rawTrackPts||!rawTrackPts.length){
-      results.innerHTML=`<div style="color:#f87171;font-size:12px;padding:12px">Bitte GPS aktivieren oder GPX laden.</div>`;
+    // try browser geolocation first
+    const geoPos = await new Promise(resolve=>{
+      if(!navigator.geolocation){resolve(null);return;}
+      navigator.geolocation.getCurrentPosition(
+        p=>resolve({lat:p.coords.latitude,lon:p.coords.longitude}),
+        ()=>resolve(null),
+        {timeout:6000,maximumAge:60000}
+      );
+    });
+    if(geoPos){
+      lat=geoPos.lat; lon=geoPos.lon; locSource="Gerät-GPS";
+    } else if(rawTrackPts&&rawTrackPts.length){
+      // use route start (first trackpoint)
+      const pt=rawTrackPts[0];
+      lat=pt.lat; lon=pt.lon; locSource="Routenstart";
+    } else if(stops&&stops.length){
+      // last resort: try to get coords from elevGrid nearest first stop
+      results.innerHTML=`<div style="color:#f87171;font-size:12px;padding:12px">Keine GPS-Position verfügbar. Bitte GPX laden oder Standort im Browser erlauben.</div>`;
+      if(btn){btn.innerHTML=`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-.08-4.43"/></svg> Laden`;btn.disabled=false;}
       return;
     }
-    const mid=rawTrackPts[Math.floor(rawTrackPts.length/2)];
-    lat=mid.lat; lon=mid.lon;
   }
 
-  if(btn){ btn.textContent="…"; btn.disabled=true; }
-  results.innerHTML=`<div style="font-size:11px;color:var(--text3);text-align:center;padding:16px">Suche läuft…</div>`;
+  results.innerHTML=`<div style="font-size:11px;color:var(--text3);text-align:center;padding:16px">Suche (${locSource}: ${lat.toFixed(4)}, ${lon.toFixed(4)})…</div>`;
 
-  const R=15000; // 15 km radius
+  const R=20000; // 20 km radius — wider net
   const query=`
 [out:json][timeout:20];
 (
@@ -3590,8 +3607,12 @@ async function loadEmergencyPOIs(){
 
   if(btn){ btn.innerHTML=`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-.08-4.43"/></svg> Laden`; btn.disabled=false; }
 
-  if(!data||!data.elements.length){
-    results.innerHTML=`<div style="color:var(--text3);font-size:12px;text-align:center;padding:16px">Keine Ergebnisse im Umkreis von 15 km</div>`;
+  if(!data){
+    results.innerHTML=`<div style="color:#f87171;font-size:12px;padding:12px">Overpass nicht erreichbar — Internetverbindung prüfen.</div>`;
+    return;
+  }
+  if(!data.elements.length){
+    results.innerHTML=`<div style="color:var(--text3);font-size:12px;text-align:center;padding:16px">Keine Ergebnisse im Umkreis von 20 km bei ${lat.toFixed(4)}, ${lon.toFixed(4)}.<br><span style="font-size:10px;opacity:.7">Overpass hat geantwortet, aber nichts gefunden.</span></div>`;
     return;
   }
 
