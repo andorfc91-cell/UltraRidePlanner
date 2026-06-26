@@ -316,14 +316,8 @@ body.ride-mode #ride-panel-wrap{display:block}
     <div id="ride-add-err" style="color:#f87171;font-size:11px;margin-top:8px"></div>
   </div>
 
-  <div class="ride-panel card" id="rpanel-versorgung">
-    <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px">🏪 Versorgung in der Nähe</div>
-    <div style="font-size:12px;color:var(--text3);margin-bottom:12px;line-height:1.5">Sucht Läden &amp; Versorgung rund um deine aktuelle GPS-Position.</div>
-    <button onclick="openEmergencySupply()" style="display:inline-flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:8px 14px;font-size:12px;font-weight:700;color:var(--text2);cursor:pointer;font-family:inherit;letter-spacing:.04em">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      Jetzt suchen
-    </button>
-    <div style="margin-top:10px;font-size:10px;color:var(--text3)">Geplante Versorgungsliste → Plan-Modus → Versorgung entlang der Route</div>
+  <div class="ride-panel" id="rpanel-versorgung" style="margin-bottom:10px">
+    <!-- poi-card gets moved here when this panel is active -->
   </div>
 
   <div class="ride-panel card" id="rpanel-wetter">
@@ -477,6 +471,7 @@ body.ride-mode #ride-panel-wrap{display:block}
 </div>
 
 <!-- Versorgung -->
+<div id="poi-card-sentinel"></div>
 <div id="poi-card" class="card">
   <div class="sec-hdr" onclick="toggleSec('poi')">
     <div class="section-title" style="margin-bottom:0"><span style="opacity:.5;margin-right:6px;font-size:12px">🏪</span>Versorgung entlang der Route</div>
@@ -2202,6 +2197,12 @@ function setAppMode(mode){
     planBtn.style.background="var(--accent2)";planBtn.style.color="#fff";
     stopRideTracking();
     document.getElementById("route-sub").style.display="";
+    // Return poi-card to plan view if it was moved
+    const pc=document.getElementById("poi-card");
+    const ps=document.getElementById("poi-card-sentinel");
+    if(pc&&ps&&pc.parentNode?.id==="rpanel-versorgung"){
+      pc.style.margin=""; pc.classList.add("plan-only"); ps.after(pc);
+    }
     // Return chart card to plan view if it was moved
     const cc=document.getElementById("chart-card");
     const sentinel=document.getElementById("chart-card-sentinel");
@@ -2455,10 +2456,11 @@ function renderRideHero(){
       <span style="font-size:15px;font-weight:800;color:var(--accent);min-width:60px;text-align:center">${curSpeed.toFixed(1)} km/h</span>
       <button onclick="setRideSpeed(${(curSpeed+0.5).toFixed(1)})" style="width:30px;height:30px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:17px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;padding:0">+</button>
     </div>
-    <button onclick="openEmergencySupply()" style="display:flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:7px 13px;font-size:11px;font-weight:700;color:var(--text2);cursor:pointer;font-family:inherit;flex-shrink:0;letter-spacing:.04em">
+    <button onclick="setRidePanel('versorgung')" style="display:flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:7px 13px;font-size:11px;font-weight:700;color:var(--text2);cursor:pointer;font-family:inherit;flex-shrink:0;letter-spacing:.04em">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
       Versorgung
     </button>
+
   </div>`;
 
   // GPS speed suggestion
@@ -3390,6 +3392,17 @@ function initPacklistIfNeeded(){
 let _ridePanel = "etappen";
 
 function setRidePanel(id){
+  // If leaving versorgung, return poi-card to plan view
+  if(_ridePanel==="versorgung"&&id!=="versorgung"){
+    const poiCard=document.getElementById("poi-card");
+    const sentinel=document.getElementById("poi-card-sentinel");
+    if(poiCard&&sentinel&&poiCard.parentNode?.id==="rpanel-versorgung"){
+      poiCard.style.margin="";
+      poiCard.classList.add("plan-only");
+      sentinel.after(poiCard);
+    }
+  }
+
   _ridePanel = id;
   // update chips
   document.querySelectorAll(".ride-chip").forEach(c=>{
@@ -3400,6 +3413,19 @@ function setRidePanel(id){
     p.classList.toggle("active", p.id==="rpanel-"+id);
   });
   // lazy init
+  if(id==="versorgung"){
+    // Move the real poi-card into the ride panel
+    const poiCard=document.getElementById("poi-card");
+    const rPanel=document.getElementById("rpanel-versorgung");
+    if(poiCard&&rPanel&&poiCard.parentNode?.id!=="rpanel-versorgung"){
+      poiCard.classList.remove("plan-only");
+      poiCard.style.margin="0";
+      rPanel.appendChild(poiCard);
+      // open it if closed
+      const body=document.getElementById("body-poi");
+      if(body&&body.classList.contains("closed")) toggleSec("poi");
+    }
+  }
   if(id==="etappen") renderRideTable();
   if(id==="profil"){
     // Move the real chart card into the ride profil panel
@@ -3479,6 +3505,22 @@ document.addEventListener("DOMContentLoaded",()=>{
   });
   const mainPoi=document.getElementById("poi-body");
   if(mainPoi) obs.observe(mainPoi,{childList:true,subtree:true,characterData:true});
+  // Also mirror filter chips
+  const mainFilters=document.getElementById("poi-filters");
+  if(mainFilters){
+    new MutationObserver(()=>{
+      const rf=document.getElementById("poi-filters-ride");
+      if(rf){ rf.innerHTML=mainFilters.innerHTML; rf.style.display=mainFilters.style.display; }
+    }).observe(mainFilters,{childList:true,subtree:true,attributes:true,attributeFilter:["style"]});
+  }
+  // Also sync undo button visibility
+  const origUndo=document.getElementById("towns-undo-btn");
+  if(origUndo){
+    new MutationObserver(()=>{
+      const rideUndo=document.getElementById("towns-undo-btn-ride");
+      if(rideUndo) rideUndo.style.display=origUndo.style.display;
+    }).observe(origUndo,{attributes:true,attributeFilter:["style"]});
+  }
 
   const obs2=new MutationObserver(()=>{
     const rideBody=document.getElementById("weather-body-ride");
