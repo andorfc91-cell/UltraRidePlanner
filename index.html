@@ -263,7 +263,7 @@ body.ride-mode #ride-panel-wrap{display:block}
       <span class="ride-chip-label">Versorgung</span>
     </button>
   </div>
-  <div class="ride-chip-grid-bot">
+  <div class="ride-chip-grid" style="margin-top:7px">
     <button class="ride-chip" id="chip-wetter" onclick="setRidePanel('wetter')">
       <svg class="ride-chip-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9z"/></svg>
       <span class="ride-chip-label">Wetter</span>
@@ -271,6 +271,13 @@ body.ride-mode #ride-panel-wrap{display:block}
     <button class="ride-chip" id="chip-profil" onclick="setRidePanel('profil')">
       <svg class="ride-chip-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
       <span class="ride-chip-label">Höhenprofil</span>
+    </button>
+    <button class="ride-chip" id="chip-notfall" onclick="setRidePanel('notfall')" style="border-color:rgba(239,68,68,.35)">
+      <svg class="ride-chip-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+        <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+      </svg>
+      <span class="ride-chip-label" style="color:#f87171">SOS</span>
     </button>
   </div>
 </div>
@@ -312,7 +319,11 @@ body.ride-mode #ride-panel-wrap{display:block}
   <div class="ride-panel card" id="rpanel-versorgung">
     <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">🏪 Versorgung</div>
     <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
-      <button onclick="event.stopPropagation();loadPois()" id="poi-btn-ride" class="btn btn-sm" style="background:#0ea5e9">🔍 Neu laden</button>
+      <button onclick="event.stopPropagation();loadPois()" id="poi-btn-ride"
+  style="display:inline-flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:7px 12px;font-size:11px;font-weight:700;color:var(--text2);cursor:pointer;font-family:inherit;letter-spacing:.04em">
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-.08-4.43"/></svg>
+  Neu laden
+</button>
       <button onclick="openEmergencySupply()" style="display:inline-flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:11px;font-weight:700;color:var(--text2);cursor:pointer;font-family:inherit;letter-spacing:.04em">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
         Versorgung suchen
@@ -324,13 +335,63 @@ body.ride-mode #ride-panel-wrap{display:block}
   <div class="ride-panel card" id="rpanel-wetter">
     <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">🌤 Wetter</div>
     <div style="margin-bottom:10px">
-      <button onclick="event.stopPropagation();loadWeather()" id="weather-btn-ride" class="btn btn-sm" style="background:#0ea5e9">☁️ Laden</button>
+      <button onclick="event.stopPropagation();loadWeather()" id="weather-btn-ride"
+  style="display:inline-flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:7px 12px;font-size:11px;font-weight:700;color:var(--text2);cursor:pointer;font-family:inherit;letter-spacing:.04em">
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9z"/></svg>
+  Laden
+</button>
     </div>
     <div id="weather-body-ride" style="font-size:12px;color:var(--text3)">GPX importieren, dann Laden</div>
   </div>
 
   <div class="ride-panel" id="rpanel-profil" style="margin-bottom:10px">
     <!-- reuse the real chart card from plan view — move it here when active -->
+  </div>
+
+  <div class="ride-panel card" id="rpanel-notfall" style="padding:0;overflow:hidden">
+
+    <!-- Header -->
+    <div style="display:flex;align-items:center;gap:10px;padding:14px 14px 12px;border-bottom:1px solid var(--border)">
+      <div style="width:36px;height:36px;border-radius:10px;background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      </div>
+      <div>
+        <div style="font-size:13px;font-weight:800;color:var(--text)">Notfall & Rettung</div>
+        <div style="font-size:10px;color:var(--text3)">Nächste Hilfe entlang der Route</div>
+      </div>
+      <button onclick="loadEmergencyPOIs()" id="sos-load-btn"
+        style="margin-left:auto;display:flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:7px 12px;font-size:11px;font-weight:700;color:var(--text2);cursor:pointer;font-family:inherit;flex-shrink:0">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-.08-4.43"/></svg>
+        Laden
+      </button>
+    </div>
+
+    <!-- Notruf-Direktbuttons -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:12px 14px;border-bottom:1px solid var(--border)">
+      <button onclick="confirmCall('112','Notruf')" style="display:flex;flex-direction:column;align-items:center;gap:5px;background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);border-radius:12px;padding:10px 6px;cursor:pointer;font-family:inherit;width:100%">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.85 6.81a2 2 0 011.98-2.18h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L9.91 12a16 16 0 006.08 6.08l1.55-1.55a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 18.92z"/></svg>
+        <span style="font-size:9px;font-weight:800;color:#f87171;text-transform:uppercase;letter-spacing:.06em">Notruf</span>
+        <span style="font-size:16px;font-weight:900;color:#f87171">112</span>
+      </button>
+      <button onclick="confirmCall('110','Polizei')" style="display:flex;flex-direction:column;align-items:center;gap:5px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:10px 6px;cursor:pointer;font-family:inherit;width:100%">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        <span style="font-size:9px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:.06em">Polizei</span>
+        <span style="font-size:16px;font-weight:900;color:var(--text2)">110</span>
+      </button>
+      <button onclick="copyPosition()" style="display:flex;flex-direction:column;align-items:center;gap:5px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:10px 6px;cursor:pointer;font-family:inherit;width:100%">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 00-8 8c0 5.25 8 14 8 14s8-8.75 8-14a8 8 0 00-8-8z"/></svg>
+        <span style="font-size:9px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:.06em">Position</span>
+        <span style="font-size:11px;font-weight:700;color:var(--text2)" id="sos-gps-label">kopieren</span>
+      </button>
+    </div>
+
+    <!-- Ergebnisse -->
+    <div id="sos-results" style="padding:10px 14px">
+      <div style="font-size:11px;color:var(--text3);text-align:center;padding:16px 0">
+        Auf „Laden" tippen — findet Krankenhaus, Bahnhof &amp; Rettungspunkte in der Nähe
+      </div>
+    </div>
+
   </div>
 
 </div><!-- end ride-panel-wrap -->
@@ -383,8 +444,12 @@ body.ride-mode #ride-panel-wrap{display:block}
       <div>
         <label>Pause alle km</label>
         <div class="row" style="gap:6px">
-          <input type="number" id="pause-interval" value="60" min="10" max="200" step="5" style="width:66px"/>
-          <button onclick="applyPauseInterval()" class="btn btn-primary btn-sm">Setzen</button>
+          <input type="number" id="pause-interval" value="60" min="10" max="500" step="5" style="width:66px"/>
+          <button onclick="applyPauseInterval()"
+  style="display:inline-flex;align-items:center;gap:6px;background:var(--accent2);border:none;border-radius:9px;padding:7px 14px;font-size:11px;font-weight:700;color:#fff;cursor:pointer;font-family:inherit;letter-spacing:.04em">
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+  Setzen
+</button>
         </div>
       </div>
     </div>
@@ -422,14 +487,28 @@ body.ride-mode #ride-panel-wrap{display:block}
   <div class="sec-hdr" onclick="toggleSec('poi')">
     <div class="section-title" style="margin-bottom:0"><span style="opacity:.5;margin-right:6px;font-size:12px">🏪</span>Versorgung entlang der Route</div>
     <div style="display:flex;align-items:center;gap:8px">
-      <button onclick="event.stopPropagation();loadPois()" id="poi-btn" class="btn btn-sm" style="background:#0ea5e9">🔍 Laden</button>
+      <button onclick="event.stopPropagation();loadPois()" id="poi-btn"
+  style="display:inline-flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:7px 12px;font-size:11px;font-weight:700;color:var(--text2);cursor:pointer;font-family:inherit;letter-spacing:.04em">
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-.08-4.43"/></svg>
+  Laden
+</button>
       <span class="chev" id="chev-poi">▾</span>
     </div>
   </div>
-  <button onclick="openEmergencySupply()" style="display:inline-flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:11px;font-weight:700;color:var(--text2);cursor:pointer;font-family:inherit;margin-top:8px;letter-spacing:.04em">
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
-    Versorgung suchen
-  </button>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;align-items:center">
+    <button onclick="openEmergencySupply()" style="display:inline-flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:7px 12px;font-size:11px;font-weight:700;color:var(--text2);cursor:pointer;font-family:inherit;letter-spacing:.04em">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+      Versorgung suchen
+    </button>
+    <button onclick="findNearbyTowns()" id="towns-btn" style="display:inline-flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:7px 12px;font-size:11px;font-weight:700;color:var(--text2);cursor:pointer;font-family:inherit;letter-spacing:.04em">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      Orte finden
+    </button>
+    <button onclick="undoTownSuggestions()" id="towns-undo-btn" style="display:none;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:7px 12px;font-size:11px;font-weight:700;color:#f87171;cursor:pointer;font-family:inherit;letter-spacing:.04em">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 00-4-4H4"/></svg>
+      Rückgängig
+    </button>
+  </div>
   <div class="sec-body closed" id="body-poi" style="max-height:0;margin-top:10px">
     <div id="poi-filters" style="display:none;flex-wrap:wrap;gap:6px;margin-bottom:12px"></div>
     <div id="poi-body" style="font-size:12px;color:var(--text3)">GPX importieren, dann Laden antippen</div>
@@ -461,7 +540,11 @@ body.ride-mode #ride-panel-wrap{display:block}
   <div class="sec-hdr" onclick="toggleSec('weather')">
     <div class="section-title" style="margin-bottom:0"><span style="opacity:.5;margin-right:6px;font-size:12px">🌤</span>Wetter & Nacht (Details)</div>
     <div style="display:flex;align-items:center;gap:8px">
-      <button onclick="event.stopPropagation();loadWeather()" id="weather-btn" class="btn btn-sm" style="background:#0ea5e9">☁️ Laden</button>
+      <button onclick="event.stopPropagation();loadWeather()" id="weather-btn"
+  style="display:inline-flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:7px 12px;font-size:11px;font-weight:700;color:var(--text2);cursor:pointer;font-family:inherit;letter-spacing:.04em">
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9z"/></svg>
+  Laden
+</button>
       <span class="chev" id="chev-weather">▾</span>
     </div>
   </div>
@@ -876,8 +959,55 @@ function drawChart(computed){
     svg+=`<text x="${x}" y="${KM_Y}" text-anchor="middle" font-size="9" fill="#94a3b8">${s.km}</text>`;
   });
 
-  // touch/mouse overlay
-  svg+=`<rect id="chart-overlay" x="${PAD.left}" y="${PAD.top}" width="${cW}" height="${cH}" fill="transparent" style="cursor:crosshair"/>`;
+  // ── GPS / Rider position marker ────────────────────────────────────────────
+  const isRideMode=document.body.classList.contains("ride-mode");
+  if(isRideMode){
+    // Determine current km: GPS-based or from computed schedule progress
+    let riderKm=null;
+    if(rideCurrentPos&&rawTrackPts&&rawTrackPts.length){
+      riderKm=nearestRouteKm(rideCurrentPos.lat,rideCurrentPos.lon);
+    } else {
+      // fallback: use first upcoming stop as approximate position
+      const now=new Date();
+      const upcoming=computed.find(s=>s.arrival>now);
+      if(upcoming){
+        const prev=computed[computed.indexOf(upcoming)-1];
+        if(prev){
+          const elapsed=(now-prev.departure)/3600000;
+          const spd2=parseFloat(document.getElementById("speed").value)||20;
+          riderKm=Math.min(upcoming.km, prev.km+elapsed*spd2);
+        }
+      }
+    }
+    if(riderKm!==null&&riderKm>=0&&riderKm<=totalKm){
+      const rx=xS(riderKm);
+      // interpolate elevation at riderKm
+      let riderEle=0;
+      for(let i=0;i<elevGrid.length-1;i++){
+        const[k0,e0]=elevGrid[i],[k1,e1]=elevGrid[i+1];
+        if(riderKm>=k0&&riderKm<=k1){
+          const f=(riderKm-k0)/(k1-k0||1);
+          riderEle=e0+f*(e1-e0);
+          break;
+        }
+      }
+      const ry=yS(riderEle);
+      // glow ring
+      svg+=`<circle cx="${rx}" cy="${ry}" r="10" fill="rgba(74,158,255,0.15)" stroke="none"/>`;
+      svg+=`<circle cx="${rx}" cy="${ry}" r="6" fill="rgba(74,158,255,0.3)" stroke="none"/>`;
+      // position dot
+      svg+=`<circle cx="${rx}" cy="${ry}" r="4" fill="#4a9eff" stroke="#fff" stroke-width="1.5"/>`;
+      // tiny cyclist icon above dot
+      svg+=`<text x="${rx}" y="${ry-14}" text-anchor="middle" font-size="14" dominant-baseline="middle">🚴</text>`;
+      // vertical guide line
+      svg+=`<line x1="${rx}" y1="${PAD.top}" x2="${rx}" y2="${ry-4}" stroke="#4a9eff" stroke-width="1" stroke-dasharray="3,3" opacity="0.5"/>`;
+    }
+  }
+
+  // touch/mouse overlay — plan mode only
+  if(!isRideMode){
+    svg+=`<rect id="chart-overlay" x="${PAD.left}" y="${PAD.top}" width="${cW}" height="${cH}" fill="transparent" style="cursor:crosshair"/>`;
+  }
   svg+="</svg>";
 
   document.getElementById("chart-wrap").innerHTML=svg;
@@ -893,10 +1023,12 @@ function drawChart(computed){
     stops.forEach((s,i)=>{const d=Math.abs(s.km-km);if(d<best){best=d;near=i;}});
     if(near!==hovIdx){hovIdx=near;renderAll();}
   }
-  overlay.addEventListener("touchstart",handleTouch,{passive:false});
-  overlay.addEventListener("touchmove",handleTouch,{passive:false});
-  overlay.addEventListener("mousemove",handleTouch);
-  overlay.addEventListener("mouseleave",()=>{if(hovIdx!==null){hovIdx=null;renderAll();}});
+  if(overlay){
+    overlay.addEventListener("touchstart",handleTouch,{passive:false});
+    overlay.addEventListener("touchmove",handleTouch,{passive:false});
+    overlay.addEventListener("mousemove",handleTouch);
+    overlay.addEventListener("mouseleave",()=>{if(hovIdx!==null){hovIdx=null;renderAll();}});
+  }
 }
 
 // ── Night & Resupply helpers ──────────────────────────────────────────────────
@@ -1186,6 +1318,21 @@ function poiSvg(type,color="#a8bbd4"){
       <path d="M8 6h8"/>
       <path d="M6 22v-9a6 6 0 0 1 12 0v9"/>
       <line x1="3" y1="22" x2="21" y2="22"/>
+    </svg>`,
+    water_point:`<svg width="22" height="22" viewBox="0 0 24 24" ${s}>
+      <path d="M12 2C6 8 4 12 4 15a8 8 0 0 0 16 0c0-3-2-7-8-13z"/>
+      <line x1="12" y1="12" x2="12" y2="19"/>
+      <line x1="9" y1="16" x2="15" y2="16"/>
+    </svg>`,
+    spring:`<svg width="22" height="22" viewBox="0 0 24 24" ${s}>
+      <path d="M12 2C6 8 4 12 4 15a8 8 0 0 0 16 0c0-3-2-7-8-13z"/>
+      <path d="M8 20c1.5-1 3-1.5 4-1.5s2.5.5 4 1.5"/>
+    </svg>`,
+    toilets:`<svg width="22" height="22" viewBox="0 0 24 24" ${s}>
+      <circle cx="8" cy="5" r="2"/>
+      <circle cx="16" cy="5" r="2"/>
+      <path d="M6 9h4v6l1 4H7l1-4V9z"/>
+      <path d="M14 9h4l1 5h-2v5h-2v-5h-2z"/>
     </svg>`
   };
   return icons[type]||`<svg width="22" height="22" viewBox="0 0 24 24" ${s}><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`;
@@ -1199,9 +1346,12 @@ const POI_ICONS={
   kiosk:"🏪",
   fuel:"⛽",
   drinking_water:"💧",
+  water_point:"🚰",
+  spring:"🌿",
+  toilets:"🚻",
   cemetery:"⛲"
 };
-const POI_PRIORITY={supermarket:5,bakery:4,deli:3,convenience:3,kiosk:2,fuel:2,drinking_water:1,cemetery:1};
+const POI_PRIORITY={supermarket:5,bakery:4,deli:3,convenience:3,kiosk:2,fuel:2,drinking_water:2,water_point:2,spring:2,toilets:1,cemetery:1};
 
 function distToTrack(lat,lon){
   if(!rawTrackPts||!rawTrackPts.length)return 0;
@@ -1296,6 +1446,9 @@ async function loadPois(){
   node["shop"~"^(supermarket|convenience|bakery|deli|kiosk)$"](${ll});
   node["amenity"="fuel"](${ll});
   node["amenity"="drinking_water"](${ll});
+  node["amenity"="water_point"](${ll});
+  node["natural"="spring"]["drinking_water"!="no"](${ll});
+  node["amenity"="toilets"](${ll});
   node["amenity"="cemetery"](${ll});
   way["landuse"="cemetery"](${ll});
   way["amenity"="grave_yard"](${ll});`;
@@ -1580,7 +1733,7 @@ let lastLoadedPois=[]; // stored for map section reuse
 
 // ── Type filter (Bäckerei, Supermarkt, Tankstelle, Wasser, Friedhof, ...) ────
 const POI_TYPE_LABELS={
-  supermarket:"Supermarkt",convenience:"Kiosk",bakery:"Bäckerei",deli:"Feinkost",
+  supermarket:"Supermarkt",convenience:"Kiosk",bakery:"Bäckerei",deli:"Feinkost",water_point:"Wasser",spring:"Quelle",toilets:"WC",
   kiosk:"Kiosk",fuel:"Tankstelle",drinking_water:"Trinkwasser",cemetery:"Friedhof"
 };
 let activeTypeFilters=null; // null = all types shown; Set = only these types
@@ -1591,12 +1744,13 @@ function renderFilterChips(pois){
   if(!types.length){bar.style.display="none";return;}
   bar.style.display="flex";
   const allActive=activeTypeFilters===null;
-  let html=`<button onclick="toggleTypeFilter(null)" style="background:${allActive?"var(--accent2)":"var(--bg)"};color:${allActive?"#fff":"var(--text2)"};border:1px solid ${allActive?"var(--accent2)":"var(--border)"};border-radius:20px;padding:6px 13px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">Alle</button>`;
+  const chipBase="display:inline-flex;align-items:center;gap:5px;border-radius:10px;padding:6px 11px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;border:1px solid;letter-spacing:.04em;transition:background .12s,color .12s";
+  let html=`<button onclick="toggleTypeFilter(null)" style="${chipBase};background:${allActive?"var(--accent2)":"var(--surface2)"};color:${allActive?"#fff":"var(--text3)"};border-color:${allActive?"var(--accent2)":"var(--border)"}">Alle</button>`;
   types.forEach(t=>{
     const isOn=activeTypeFilters===null||activeTypeFilters.has(t);
     const count=pois.filter(p=>p.type===t).length;
-    html+=`<button onclick="toggleTypeFilter('${t}')" style="background:${isOn?"var(--accent2)":"var(--bg)"};color:${isOn?"#fff":"var(--text2)"};border:1px solid ${isOn?"var(--accent2)":"var(--border)"};border-radius:20px;padding:6px 13px;font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:5px;font-family:inherit">
-      ${POI_ICONS[t]||"📍"} ${POI_TYPE_LABELS[t]||t} <span style="opacity:.7">${count}</span>
+    html+=`<button onclick="toggleTypeFilter('${t}')" style="${chipBase};background:${isOn?"var(--accent2)":"var(--surface2)"};color:${isOn?"#fff":"var(--text3)"};border-color:${isOn?"var(--accent2)":"var(--border)"}">
+      <span>${POI_ICONS[t]||"📍"}</span><span>${POI_TYPE_LABELS[t]||t}</span><span style="opacity:.6;font-size:10px">${count}</span>
     </button>`;
   });
   bar.innerHTML=html;
@@ -1633,7 +1787,7 @@ function renderPois(elements){
   const body=document.getElementById("poi-body");
   const computed=computeSchedule();
   if(!elements.length){body.innerHTML='<div style="color:var(--text3);font-size:12px">Keine Versorgungspunkte in der Bounding Box gefunden</div>';return;}
-  const VALID_TYPES=new Set(["supermarket","convenience","kiosk","bakery","deli","fuel","drinking_water","cemetery"]);
+  const VALID_TYPES=new Set(["supermarket","convenience","kiosk","bakery","deli","fuel","drinking_water","water_point","spring","toilets","cemetery"]);
   const allPois=elements
     .map(e=>{
       // ways come back with .center; nodes have lat/lon directly
@@ -1645,6 +1799,10 @@ function renderPois(elements){
       const t=e.tags||{};
       let type=t.shop||t.amenity||"?";
       if(t.landuse==="cemetery"||t.amenity==="grave_yard"||t.amenity==="cemetery")type="cemetery";
+      // normalize water & sanitation types
+      if(t.amenity==="water_point") type="water_point";
+      if(t.natural==="spring") type="spring";
+      if(t.amenity==="toilets") type="toilets";
       // merge convenience-style shops into "kiosk" — same icon/category, avoids duplicate chips
       if(type==="convenience")type="kiosk";
       // discard anything not in our known set (stray amenity/shop tag values
@@ -1794,6 +1952,9 @@ function renderPoiList(allPois){
 }
 
 
+let townSuggestions=[];
+let stopsSnapshotBeforeTowns=null;
+
 function renderTable(computed){
   const tbody=document.getElementById("tbl-body");
   tbody.innerHTML="";
@@ -1883,6 +2044,25 @@ function renderTable(computed){
       <td><input type="text" value="${s.hinweis}" style="color:#64748b;font-weight:400;font-size:12px" data-i="${i}" data-f="hinweis"/></td>
       ${delBtn}`;
     tbody.appendChild(tr);
+
+    // Town suggestion row
+    const sugg=townSuggestions.find(s=>s.stopIdx===i);
+    if(sugg&&!sugg.accepted&&!sugg.dismissed){
+      const suggRow=document.createElement("tr");
+      suggRow.id=`town-sugg-${i}`;
+      suggRow.innerHTML=`<td colspan="8" style="padding:2px 8px 8px">
+        <div style="display:flex;align-items:center;gap:8px;background:rgba(74,158,255,.08);border:1px solid rgba(74,158,255,.2);border-radius:10px;padding:8px 12px;flex-wrap:wrap">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          <span style="flex:1;font-size:11px;color:#93c5fd;font-weight:600;line-height:1.4">${sugg.text}</span>
+          <button onclick="acceptTownSuggestion(${i})" style="display:inline-flex;align-items:center;gap:4px;background:var(--accent2);border:none;border-radius:7px;padding:5px 11px;font-size:11px;font-weight:700;color:#fff;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            Übernehmen
+          </button>
+          <button onclick="dismissTownSuggestion(${i})" style="display:inline-flex;align-items:center;background:none;border:1px solid var(--border);border-radius:7px;padding:5px 8px;font-size:12px;color:var(--text3);cursor:pointer;font-family:inherit;flex-shrink:0" title="Ignorieren">✕</button>
+        </div>
+      </td>`;
+      tbody.appendChild(suggRow);
+    }
   });
 
   tbody.querySelectorAll("input").forEach(inp=>{
@@ -2044,6 +2224,8 @@ function startRideTracking(){
   rideWatchId=navigator.geolocation.watchPosition(
     pos=>{
       rideCurrentPos={lat:pos.coords.latitude,lon:pos.coords.longitude};
+      // refresh chart rider dot if profil panel is visible
+      if(_ridePanel==="profil") renderAll();
       lastKnownPosition={lat:pos.coords.latitude,lon:pos.coords.longitude,accuracy:pos.coords.accuracy,ts:Date.now()};
       if(rawTrackPts&&rawTrackPts.length){
         const km=nearestRouteKm(rideCurrentPos.lat,rideCurrentPos.lon);
@@ -2172,38 +2354,55 @@ function renderRideHero(){
   const segElev = segmentElevGain(segFromKm, next.km);
   const segDist = prevStop ? (next.km - prevStop.km) : (distKm !== null ? distKm : null);
 
+  // ── GPS-based remaining distance (preferred) vs full segment ──────────────
+  const displayKm = distKm !== null ? distKm : segDist;
+  const distLabel = distKm !== null ? "Nur noch" : (segDist !== null ? "Etappe" : null);
+
   // ── HERO: Nächster Stopp ────────────────────────────────────────────────
   let html=`
   <div style="text-align:center;padding:4px 0 2px">
-    <div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.12em;margin-bottom:4px">
-      ${distKm!==null?`noch ~${distKm} km`:"Nächster geplanter Stopp"}
-    </div>
+    <div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.12em;margin-bottom:4px">Nächster geplanter Stopp</div>
     <div style="font-size:34px;font-weight:900;color:${ampelColor};line-height:1.1;letter-spacing:-0.5px">${esc(next.region)}</div>
-
-    <div style="display:flex;justify-content:center;align-items:center;gap:12px;margin-top:10px;flex-wrap:wrap">
-      <span style="font-size:20px;color:var(--text);font-weight:800;font-family:monospace">${fmt(next.arrival)}</span>
-      ${dark?`<span style="font-size:18px">🌙</span>`:`<span style="font-size:18px">☀️</span>`}
-      ${wxIcon?`<span style="font-size:15px;color:var(--text2)">${wxIcon} ${wx.temp}°</span>`:""}
+    <div style="display:flex;justify-content:center;align-items:center;gap:10px;margin-top:8px">
+      <span style="font-size:19px;color:var(--text);font-weight:800;font-family:monospace">${fmt(next.arrival)}</span>
+      ${dark?`<span style="font-size:17px">🌙</span>`:`<span style="font-size:17px">☀️</span>`}
+      ${wxIcon?`<span style="font-size:13px;color:var(--text2)">${wxIcon} ${wx.temp}°</span>`:""}
     </div>
 
-    <!-- Segment stats row -->
-    <div style="display:flex;justify-content:center;gap:16px;margin-top:12px;flex-wrap:wrap">
-      ${segDist!==null?`<div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:6px 14px;text-align:center">
-        <div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.08em">Distanz</div>
-        <div style="font-size:17px;font-weight:800;color:var(--text);margin-top:1px">${segDist} km</div>
+    <!-- Info chips row — same style as nav chips -->
+    <div style="display:grid;grid-template-columns:${next.pause?'1fr 1fr 1fr':'1fr 1fr'};gap:8px;margin-top:12px">
+
+      ${displayKm!==null?`
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:10px 6px;display:flex;flex-direction:column;align-items:center;gap:5px">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="${distKm!==null?"var(--accent2)":"var(--text3)"}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+        </svg>
+        <div style="font-size:9px;color:var(--text3);font-weight:800;text-transform:uppercase;letter-spacing:.07em;line-height:1">${distLabel}</div>
+        <div style="font-size:20px;font-weight:900;color:${distKm!==null?"var(--accent2)":"var(--text)"};line-height:1">${displayKm} <span style="font-size:11px;font-weight:700">km</span></div>
       </div>`:""}
-      ${segElev?`<div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:6px 14px;text-align:center">
-        <div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.08em">Höhenmeter</div>
-        <div style="font-size:17px;font-weight:800;color:var(--text);margin-top:1px">▲${segElev.up} <span style="font-size:12px;color:var(--text3)">▼${segElev.down}</span></div>
+
+      ${segElev?`
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:10px 6px;display:flex;flex-direction:column;align-items:center;gap:5px">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>
+        </svg>
+        <div style="font-size:9px;color:var(--text3);font-weight:800;text-transform:uppercase;letter-spacing:.07em;line-height:1">Hm rauf</div>
+        <div style="font-size:20px;font-weight:900;color:var(--text);line-height:1">▲${segElev.up} <span style="font-size:11px;color:var(--text3)">▼${segElev.down}</span></div>
       </div>`:""}
-      ${next.pause?`<div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:6px 12px;text-align:center" id="pause-tile-${nextIdx}">
-        <div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.08em">Pause</div>
-        <div style="display:flex;align-items:center;gap:4px;margin-top:2px">
-          <button onclick="adjustStopPause(${nextIdx},-5)" style="width:24px;height:24px;border:1px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text);font-size:14px;font-weight:700;cursor:pointer;line-height:1;padding:0;flex-shrink:0">−</button>
-          <span style="font-size:17px;font-weight:800;color:var(--accent);min-width:44px;text-align:center">${next.pause}m</span>
-          <button onclick="adjustStopPause(${nextIdx},+5)" style="width:24px;height:24px;border:1px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text);font-size:14px;font-weight:700;cursor:pointer;line-height:1;padding:0;flex-shrink:0">+</button>
+
+      ${next.pause?`
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:10px 6px;display:flex;flex-direction:column;align-items:center;gap:5px" id="pause-tile-${nextIdx}">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/><line x1="10" y1="15" x2="10" y2="9"/><line x1="14" y1="15" x2="14" y2="9"/>
+        </svg>
+        <div style="font-size:9px;color:var(--text3);font-weight:800;text-transform:uppercase;letter-spacing:.07em;line-height:1">Pause</div>
+        <div style="display:flex;align-items:center;gap:5px">
+          <button onclick="adjustStopPause(${nextIdx},-5)" style="width:22px;height:22px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);font-size:14px;font-weight:700;cursor:pointer;line-height:1;padding:0;flex-shrink:0">−</button>
+          <span style="font-size:18px;font-weight:900;color:var(--accent);min-width:36px;text-align:center;line-height:1">${next.pause}<span style="font-size:10px">m</span></span>
+          <button onclick="adjustStopPause(${nextIdx},+5)" style="width:22px;height:22px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);font-size:14px;font-weight:700;cursor:pointer;line-height:1;padding:0;flex-shrink:0">+</button>
         </div>
       </div>`:""}
+
     </div>
   </div>`;
 
@@ -2375,7 +2574,7 @@ async function runEmergencySearch(){
 
   const{lat,lon}=lastKnownPosition;
   const radiusM=emergencyRadius*1000;
-  const VALID_TYPES=new Set(["supermarket","convenience","kiosk","bakery","deli","fuel","drinking_water","cemetery"]);
+  const VALID_TYPES=new Set(["supermarket","convenience","kiosk","bakery","deli","fuel","drinking_water","water_point","spring","toilets","cemetery"]);
 
   const query=`[out:json][timeout:25];
 (
@@ -2415,6 +2614,9 @@ out body center;`;
         const t=e.tags||{};
         let type=t.shop||t.amenity||"?";
         if(t.landuse==="cemetery"||t.amenity==="grave_yard"||t.amenity==="cemetery")type="cemetery";
+        if(t.amenity==="water_point")type="water_point";
+        if(t.natural==="spring")type="spring";
+        if(t.amenity==="toilets")type="toilets";
         if(type==="convenience")type="kiosk";
         if(!VALID_TYPES.has(type))return null;
         const status=type==="cemetery"
@@ -3284,6 +3486,379 @@ document.addEventListener("DOMContentLoaded",()=>{
   const mainWx=document.getElementById("weather-body");
   if(mainWx) obs2.observe(mainWx,{childList:true,subtree:true,characterData:true});
 });
+
+// ── SOS / Notfall ─────────────────────────────────────────────────────────────
+
+function confirmCall(number, label){
+  // Two-step confirmation overlay — prevents accidental calls while scrolling
+  const overlay=document.createElement("div");
+  overlay.style.cssText="position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:24px";
+  overlay.innerHTML=`
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:28px 24px;max-width:300px;width:100%;text-align:center">
+      <div style="font-size:36px;margin-bottom:12px">${number==="112"?"🚑":"🚓"}</div>
+      <div style="font-size:18px;font-weight:900;color:var(--text);margin-bottom:6px">${label} anrufen?</div>
+      <div style="font-size:13px;color:var(--text3);margin-bottom:24px;line-height:1.5">
+        Nur im echten Notfall anrufen.<br>Falschalarme sind strafbar.
+      </div>
+      <div style="display:flex;gap:10px">
+        <button onclick="this.closest('div[style*=fixed]').remove()"
+          style="flex:1;padding:12px;border:1px solid var(--border);border-radius:12px;background:var(--surface2);color:var(--text2);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">
+          Abbrechen
+        </button>
+        <a href="tel:${number}"
+          onclick="this.closest('div[style*=fixed]').remove()"
+          style="flex:1;padding:12px;border:none;border-radius:12px;background:#ef4444;color:#fff;font-size:16px;font-weight:900;cursor:pointer;font-family:inherit;text-decoration:none;display:flex;align-items:center;justify-content:center">
+          ${number}
+        </a>
+      </div>
+    </div>`;
+  overlay.addEventListener("click", e=>{ if(e.target===overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
+}
+
+function copyPosition(){
+  const lbl=document.getElementById("sos-gps-label");
+  const pos=rideCurrentPos;
+  if(!pos){
+    if(lbl) lbl.textContent="kein GPS";
+    return;
+  }
+  const txt=`${pos.lat.toFixed(6)}, ${pos.lon.toFixed(6)}`;
+  navigator.clipboard?.writeText(txt).then(()=>{
+    if(lbl){ lbl.textContent="✓ kopiert"; setTimeout(()=>lbl.textContent="kopieren",2000); }
+  }).catch(()=>{
+    if(lbl) lbl.textContent=txt;
+  });
+  // also update GPS label with coordinates
+  if(lbl) lbl.textContent=`${pos.lat.toFixed(4)}, ${pos.lon.toFixed(4)}`;
+}
+
+async function loadEmergencyPOIs(){
+  const btn=document.getElementById("sos-load-btn");
+  const results=document.getElementById("sos-results");
+  if(!results) return;
+
+  // Determine search center: GPS position or midpoint of current route segment
+  let lat, lon;
+  if(rideCurrentPos){
+    lat=rideCurrentPos.lat; lon=rideCurrentPos.lon;
+  } else {
+    // fallback: midpoint of rawTrackPts
+    if(!rawTrackPts||!rawTrackPts.length){
+      results.innerHTML=`<div style="color:#f87171;font-size:12px;padding:12px">Bitte GPS aktivieren oder GPX laden.</div>`;
+      return;
+    }
+    const mid=rawTrackPts[Math.floor(rawTrackPts.length/2)];
+    lat=mid.lat; lon=mid.lon;
+  }
+
+  if(btn){ btn.textContent="…"; btn.disabled=true; }
+  results.innerHTML=`<div style="font-size:11px;color:var(--text3);text-align:center;padding:16px">Suche läuft…</div>`;
+
+  const R=15000; // 15 km radius
+  const query=`
+[out:json][timeout:20];
+(
+  node["amenity"="hospital"](around:${R},${lat},${lon});
+  way["amenity"="hospital"](around:${R},${lat},${lon});
+  node["amenity"="doctors"](around:${R},${lat},${lon});
+  node["railway"="station"](around:${R},${lat},${lon});
+  node["railway"="halt"](around:${R},${lat},${lon});
+  node["emergency"="access_point"](around:${R},${lat},${lon});
+  node["amenity"="pharmacy"](around:${R},${lat},${lon});
+  node["amenity"="police"](around:${R},${lat},${lon});
+  node["tourism"="hotel"](around:${R},${lat},${lon});
+  node["tourism"="hostel"](around:${R},${lat},${lon});
+  node["amenity"="bicycle_repair_station"](around:${R},${lat},${lon});
+  node["shop"="bicycle"](around:${R},${lat},${lon});
+).out center;`;
+
+  const ENDPOINTS=[
+    "https://overpass-api.de/api/interpreter",
+    "https://overpass.kumi.systems/api/interpreter",
+    "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
+  ];
+
+  let data=null;
+  for(const url of ENDPOINTS){
+    try{
+      const r=await fetch(url,{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:"data="+encodeURIComponent(query),signal:AbortSignal.timeout(20000)});
+      if(!r.ok) continue;
+      data=await r.json(); break;
+    }catch(e){ continue; }
+  }
+
+  if(btn){ btn.innerHTML=`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-.08-4.43"/></svg> Laden`; btn.disabled=false; }
+
+  if(!data||!data.elements.length){
+    results.innerHTML=`<div style="color:var(--text3);font-size:12px;text-align:center;padding:16px">Keine Ergebnisse im Umkreis von 15 km</div>`;
+    return;
+  }
+
+  // categorize and sort by distance
+  const cats={
+    hospital:  {label:"Krankenhaus",   icon:"🏥", color:"#f87171", keys:["amenity=hospital","amenity=doctors"]},
+    pharmacy:  {label:"Apotheke",      icon:"💊", color:"#a78bfa", keys:["amenity=pharmacy"]},
+    police:    {label:"Polizei",        icon:"🚓", color:"#60a5fa", keys:["amenity=police"]},
+    station:   {label:"Bahnhof",       icon:"🚉", color:"#34d399", keys:["railway=station","railway=halt"]},
+    rescue:    {label:"Rettungspunkt", icon:"📍", color:"#fbbf24", keys:["emergency=access_point"]},
+    hotel:     {label:"Unterkunft",    icon:"🏨", color:"#94a3b8", keys:["tourism=hotel","tourism=hostel"]},
+    bike:      {label:"Fahrrad",       icon:"🔧", color:"#94a3b8", keys:["amenity=bicycle_repair_station","shop=bicycle"]},
+  };
+
+  function haversine(lat1,lon1,lat2,lon2){
+    const R=6371;const dLat=(lat2-lat1)*Math.PI/180;const dLon=(lon2-lon1)*Math.PI/180;
+    const a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+    return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+  }
+
+  function getCategory(el){
+    const t=el.tags||{};
+    if(t.amenity==="hospital"||t.amenity==="doctors") return"hospital";
+    if(t.amenity==="pharmacy") return"pharmacy";
+    if(t.amenity==="police") return"police";
+    if(t.railway==="station"||t.railway==="halt") return"station";
+    if(t.emergency==="access_point") return"rescue";
+    if(t.tourism==="hotel"||t.tourism==="hostel") return"hotel";
+    if(t.amenity==="bicycle_repair_station"||t.shop==="bicycle") return"bike";
+    return null;
+  }
+
+  // group by category, pick closest per category
+  const grouped={};
+  data.elements.forEach(el=>{
+    const elLat=el.lat||(el.center?.lat);
+    const elLon=el.lon||(el.center?.lon);
+    if(!elLat||!elLon) return;
+    const cat=getCategory(el);
+    if(!cat) return;
+    const dist=haversine(lat,lon,elLat,elLon);
+    const name=el.tags?.name||el.tags?.["name:de"]||cats[cat].label;
+    const phone=el.tags?.phone||el.tags?.["contact:phone"]||null;
+    const ref=el.tags?.ref||null; // rescue point code
+    const addr=[el.tags?.["addr:street"],el.tags?.["addr:housenumber"],el.tags?.["addr:city"]].filter(Boolean).join(" ");
+    const entry={name,dist,lat:elLat,lon:elLon,phone,ref,addr,cat};
+    if(!grouped[cat]||dist<grouped[cat].dist) grouped[cat]=entry;
+  });
+
+  // render in priority order
+  const order=["hospital","pharmacy","police","station","rescue","hotel","bike"];
+  let html=`<div style="display:flex;flex-direction:column;gap:8px;padding:4px 0">`;
+
+  order.forEach(catKey=>{
+    const item=grouped[catKey];
+    if(!item) return;
+    const c=cats[catKey];
+    const distStr=item.dist<1?(Math.round(item.dist*1000)+"m"):(item.dist.toFixed(1)+"km");
+    const mapsUrl=`https://www.google.com/maps/dir/?api=1&destination=${item.lat},${item.lon}`;
+    html+=`
+    <div style="display:flex;align-items:center;gap:10px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:10px 12px">
+      <div style="width:36px;height:36px;border-radius:10px;background:rgba(0,0,0,.2);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">${c.icon}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:10px;font-weight:800;color:${c.color};text-transform:uppercase;letter-spacing:.07em">${c.label}</div>
+        <div style="font-size:12px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(item.name)}</div>
+        ${item.ref?`<div style="font-size:10px;color:var(--text3)">Rettungspunkt: <b style="color:#fbbf24">${esc(item.ref)}</b></div>`:""}
+        ${item.addr?`<div style="font-size:10px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(item.addr)}</div>`:""}
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0">
+        <span style="font-size:11px;font-weight:800;color:var(--text2)">${distStr}</span>
+        <div style="display:flex;gap:5px">
+          ${item.phone?`<a href="tel:${item.phone.replace(/\s/g,"")}" style="width:28px;height:28px;border-radius:8px;background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.3);display:flex;align-items:center;justify-content:center;text-decoration:none">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.85 6.81a2 2 0 011.98-2.18h3a2 2 0 012 1.72c.15.96.4 1.9.7 2.81a2 2 0 01-.45 2.11L9.91 12a16 16 0 006.08 6.08l1.55-1.55a2 2 0 012.11-.45c.91.3 1.85.55 2.81.7A2 2 0 0122 18.92z"/></svg>
+          </a>`:""}
+          <a href="${mapsUrl}" target="_blank" style="width:28px;height:28px;border-radius:8px;background:rgba(74,158,255,.12);border:1px solid rgba(74,158,255,.25);display:flex;align-items:center;justify-content:center;text-decoration:none">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+          </a>
+        </div>
+      </div>
+    </div>`;
+  });
+
+  html+=`</div>`;
+  results.innerHTML=html;
+}
+
+// ── Nearby Towns (Punkt 3) ────────────────────────────────────────────────────
+const PLACE_SCORE = {city:4, town:3, village:2, hamlet:1, suburb:2};
+
+async function findNearbyTowns(){
+  if(!rawTrackPts||!rawTrackPts.length){
+    alert("Bitte zuerst GPX importieren."); return;
+  }
+  const btn=document.getElementById("towns-btn");
+  btn.textContent="…"; btn.disabled=true;
+
+  const computed=computeSchedule();
+  // build around clauses for every non-start/end stop
+  const middleStops=computed.filter((_,i)=>i>0&&i<computed.length-1);
+  if(!middleStops.length){ btn.textContent="Orte finden"; btn.disabled=false; return; }
+
+  function posForKm(target){
+    let best=Infinity,bi=0;
+    for(let i=0;i<rawTrackPts.length;i++){
+      const d=Math.abs(rawTrackPts[i].dist-target*1000);
+      if(d<best){best=d;bi=i;}
+    }
+    return rawTrackPts[bi];
+  }
+
+  // One query: all place nodes within 8km of any stop
+  let clauses="";
+  middleStops.forEach(s=>{
+    const pos=posForKm(s.km);
+    clauses+=`
+  node["place"~"^(city|town|village|hamlet|suburb)$"](around:8000,${pos.lat.toFixed(5)},${pos.lon.toFixed(5)});`;
+  });
+
+  const query=`[out:json][timeout:25];
+(
+${clauses}
+);
+out body;`;
+
+  const ENDPOINTS=[
+    "https://overpass-api.de/api/interpreter",
+    "https://overpass.kumi.systems/api/interpreter",
+    "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
+  ];
+
+  let data=null;
+  for(const url of ENDPOINTS){
+    try{
+      const r=await fetch(url,{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:"data="+encodeURIComponent(query),signal:AbortSignal.timeout(25000)});
+      if(!r.ok) continue;
+      data=await r.json(); break;
+    }catch(e){ continue; }
+  }
+
+  btn.textContent="Orte finden"; btn.disabled=false;
+  if(!data){ alert("Overpass nicht erreichbar."); return; }
+
+  // For each place node, find nearest route km
+  function nearestKmOnRoute(lat,lon){
+    let best=Infinity,bestKm=0;
+    const step=Math.max(1,Math.floor(rawTrackPts.length/3000));
+    for(let i=0;i<rawTrackPts.length;i+=step){
+      const p=rawTrackPts[i];
+      const d=Math.sqrt((lat-p.lat)**2+(lon-p.lon)**2)*111000;
+      if(d<best){best=d;bestKm=p.dist/1000;}
+    }
+    return{km:Math.round(bestKm*10)/10, distM:best};
+  }
+
+  function haversineM(lat1,lon1,lat2,lon2){
+    const R=6371000;
+    const dLat=(lat2-lat1)*Math.PI/180;
+    const dLon=(lon2-lon1)*Math.PI/180;
+    const a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+    return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+  }
+
+  townSuggestions=[];
+
+  middleStops.forEach((s,si)=>{
+    const origIdx=computed.indexOf(s);
+    const stopPos=posForKm(s.km);
+
+    // find best place candidate for this stop
+    let best=null;
+    data.elements.forEach(el=>{
+      if(!el.lat||!el.lon) return;
+      const distFromStop=haversineM(stopPos.lat,stopPos.lon,el.lat,el.lon);
+      if(distFromStop>8000) return; // outside 8km radius of this stop
+
+      const score=PLACE_SCORE[el.tags?.place]||0;
+      const name=el.tags?.name;
+      if(!name||score===0) return;
+
+      const{km:placeKm, distM:distFromRoute}=nearestKmOnRoute(el.lat,el.lon);
+
+      // Only suggest if:
+      // 1. Place is within 5km of route
+      // 2. Place is at least 300m away from current stop position (otherwise it IS the stop)
+      // 3. Place is ahead on route (km > s.km - 2) and within next segment
+      const nextStop=computed[origIdx+1];
+      const withinSegment=placeKm>=s.km-1&&placeKm<=(nextStop?nextStop.km:s.km+100);
+      if(distFromRoute>5000) return;
+      if(distFromStop<300) return; // already basically there
+      if(!withinSegment) return;
+
+      const currentScore=PLACE_SCORE[s.region?.match(/^km\s/)?0:1]||1;
+      const deltaKm=Math.round((placeKm-s.km)*10)/10;
+      const distKmFromRoute=(distFromRoute/1000).toFixed(1);
+
+      if(!best||score>best.score||(score===best.score&&distFromRoute<best.distFromRoute)){
+        best={name,place:el.tags.place,score,km:placeKm,distFromRoute,deltaKm,distKmFromRoute};
+      }
+    });
+
+    if(!best) return;
+
+    const placeLabel={city:"Stadt",town:"Kleinstadt",village:"Dorf",hamlet:"Weiler",suburb:"Stadtteil"}[best.place]||best.place;
+    const dirStr=best.deltaKm>=0?`noch ${best.deltaKm} km weiter`:`${Math.abs(best.deltaKm)} km früher`;
+    const text=`${dirStr}: **${best.name}** (${placeLabel}, ${best.distKmFromRoute} km von Route) — bessere Versorgung möglich`;
+
+    townSuggestions.push({
+      stopIdx:origIdx,
+      text,
+      newKm:best.km,
+      newRegion:best.name,
+      origKm:s.km,
+      origRegion:s.region,
+      accepted:false,
+      dismissed:false,
+    });
+  });
+
+  if(!townSuggestions.length){
+    alert("Keine besseren Orte in der Nähe der Stopps gefunden.");
+    return;
+  }
+
+  // open table section so suggestions are visible
+  const tbody=document.getElementById("body-table");
+  if(tbody&&tbody.classList.contains("closed")) toggleSec("table");
+  renderTable();
+  refreshSecHeight("table");
+}
+
+function acceptTownSuggestion(stopIdx){
+  const sugg=townSuggestions.find(s=>s.stopIdx===stopIdx);
+  if(!sugg) return;
+
+  // Save snapshot for undo (only on first accept)
+  if(!stopsSnapshotBeforeTowns){
+    stopsSnapshotBeforeTowns=JSON.parse(JSON.stringify(stops));
+  }
+
+  // Update the stop
+  stops[stopIdx].km=Math.round(sugg.newKm*10)/10;
+  stops[stopIdx].region=sugg.newRegion;
+  sugg.accepted=true;
+
+  // Show undo button
+  const undoBtn=document.getElementById("towns-undo-btn");
+  if(undoBtn) undoBtn.style.display="inline-flex";
+
+  renderAll(); saveState();
+}
+
+function dismissTownSuggestion(stopIdx){
+  const sugg=townSuggestions.find(s=>s.stopIdx===stopIdx);
+  if(sugg) sugg.dismissed=true;
+  renderTable();
+  refreshSecHeight("table");
+}
+
+function undoTownSuggestions(){
+  if(!stopsSnapshotBeforeTowns) return;
+  stops=JSON.parse(JSON.stringify(stopsSnapshotBeforeTowns));
+  stopsSnapshotBeforeTowns=null;
+  townSuggestions=[];
+  const undoBtn=document.getElementById("towns-undo-btn");
+  if(undoBtn) undoBtn.style.display="none";
+  renderAll(); saveState();
+}
 
 // ── Events ────────────────────────────────────────────────────────────────────
 document.getElementById("gpx-btn").onclick=()=>document.getElementById("gpx-file").click();
