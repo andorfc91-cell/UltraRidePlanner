@@ -3652,7 +3652,13 @@ async function loadEmergencyPOIs(){
   if(btn){ btn.innerHTML=`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-.08-4.43"/></svg> Laden`; btn.disabled=false; }
 
   if(!data){
-    results.innerHTML=`<div style="color:#f87171;font-size:12px;padding:12px">Overpass nicht erreichbar — Internetverbindung prüfen.</div>`;
+    results.innerHTML=`<div style="color:#f87171;font-size:12px;padding:12px;line-height:1.6">
+      ⚠️ Overpass nicht erreichbar — CORS-Problem bei lokalem Aufruf.<br>
+      <span style="color:var(--text3);font-size:11px">Seite über 
+        <a href="https://andorfc91-cell.github.io/UltraRidePlanner/" target="_blank" 
+           style="color:var(--accent2);text-decoration:none">GitHub Pages</a> öffnen.
+      </span>
+    </div>`;
     return;
   }
   if(!data.elements.length){
@@ -3797,7 +3803,25 @@ out body;`;
   }
 
   btn.textContent="Orte finden"; btn.disabled=false;
-  if(!data){ alert("Overpass nicht erreichbar."); return; }
+  if(!data){
+    // Show error as suggestion banner in table
+    const tbody=document.getElementById("tbl-body");
+    if(tbody){
+      const errRow=document.createElement("tr");
+      errRow.innerHTML=`<td colspan="8" style="padding:8px">
+        <div style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);border-radius:9px;padding:10px 12px;font-size:12px;color:#f87171">
+          ⚠️ Overpass nicht erreichbar — CORS-Problem bei lokalem Aufruf.<br>
+          <span style="color:var(--text3);font-size:11px">Lösung: Seite über 
+            <a href="https://andorfc91-cell.github.io/UltraRidePlanner/" target="_blank" 
+               style="color:var(--accent2);text-decoration:none">GitHub Pages</a> öffnen.
+          </span>
+        </div>
+      </td>`;
+      tbody.insertBefore(errRow, tbody.firstChild);
+    }
+    btn.textContent="Orte finden"; btn.disabled=false;
+    return;
+  }
 
   // For each place node, find nearest route km
   function nearestKmOnRoute(lat,lon){
