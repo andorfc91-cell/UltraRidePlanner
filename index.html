@@ -317,19 +317,13 @@ body.ride-mode #ride-panel-wrap{display:block}
   </div>
 
   <div class="ride-panel card" id="rpanel-versorgung">
-    <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">🏪 Versorgung</div>
-    <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
-      <button onclick="event.stopPropagation();loadPois()" id="poi-btn-ride"
-  style="display:inline-flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:7px 12px;font-size:11px;font-weight:700;color:var(--text2);cursor:pointer;font-family:inherit;letter-spacing:.04em">
-  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-.08-4.43"/></svg>
-  Neu laden
-</button>
-      <button onclick="openEmergencySupply()" style="display:inline-flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:11px;font-weight:700;color:var(--text2);cursor:pointer;font-family:inherit;letter-spacing:.04em">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
-        Versorgung suchen
-      </button>
-    </div>
-    <div id="poi-body-ride" style="font-size:12px;color:var(--text3)">GPX laden, dann Versorgung suchen</div>
+    <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px">🏪 Versorgung in der Nähe</div>
+    <div style="font-size:12px;color:var(--text3);margin-bottom:12px;line-height:1.5">Sucht Läden &amp; Versorgung rund um deine aktuelle GPS-Position.</div>
+    <button onclick="openEmergencySupply()" style="display:inline-flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:8px 14px;font-size:12px;font-weight:700;color:var(--text2);cursor:pointer;font-family:inherit;letter-spacing:.04em">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      Jetzt suchen
+    </button>
+    <div style="margin-top:10px;font-size:10px;color:var(--text3)">Geplante Versorgungsliste → Plan-Modus → Versorgung entlang der Route</div>
   </div>
 
   <div class="ride-panel card" id="rpanel-wetter">
@@ -496,10 +490,6 @@ body.ride-mode #ride-panel-wrap{display:block}
     </div>
   </div>
   <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;align-items:center">
-    <button onclick="openEmergencySupply()" style="display:inline-flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:7px 12px;font-size:11px;font-weight:700;color:var(--text2);cursor:pointer;font-family:inherit;letter-spacing:.04em">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
-      Versorgung suchen
-    </button>
     <button onclick="findNearbyTowns()" id="towns-btn" style="display:inline-flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:7px 12px;font-size:11px;font-weight:700;color:var(--text2);cursor:pointer;font-family:inherit;letter-spacing:.04em">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
       Orte finden
@@ -1843,112 +1833,124 @@ function renderPois(elements){
   refreshSecHeight("poi");
 }
 
+let _poiAccordionOpen = new Set(); // which stop indices are expanded
+
 function renderPoiList(allPois){
   const body=document.getElementById("poi-body");
   const computed=computeSchedule();
-  const totalKm=stops[stops.length-1].km;
-  const spd=Math.max(1,parseFloat(document.getElementById("speed").value)||20);
   const pois=applyTypeFilter(allPois);
 
   if(!pois.length){
     body.innerHTML='<div style="color:var(--text3);font-size:12px;padding:8px 0">Keine Treffer für die gewählten Filter</div>';
-    renderMapsSection(allPois); // maps still show full unfiltered set context
+    renderMapsSection(allPois);
     return;
   }
 
-  // ── Versorgungslücken-Kette ──────────────────────────────────────────────
-  // Statt "X km ohne Laden" (irreführend, da wir nur um Pausenpunkte suchen):
-  // Prüfe pro Pausenpunkt ob dort im Suchradius ein offener Laden lag.
-  // Eine Kette aufeinanderfolgender Pausenpunkte ohne offenen Laden ist die
-  // eigentliche Gefahr (z.B. mehrere Nacht-Stopps in Folge).
-  const realStopsForChain=computed.filter((s,i)=>i>0&&i<computed.length-1);
-  const stopHasOpen=realStopsForChain.map(s=>{
-    // any non-cemetery, non-water poi within this stop's query radius that is open
-    return allPois.some(p=>
-      Math.abs(p.km-s.km)<10 && // matches our 4-8km query radius logic
-      p.status.open===true &&
-      p.type!=="drinking_water"&&p.type!=="cemetery"
-    );
-  });
-
-  const chains=[];
-  let chainStart=null;
-  for(let i=0;i<realStopsForChain.length;i++){
-    if(!stopHasOpen[i]){
-      if(chainStart===null)chainStart=i;
-    } else {
-      if(chainStart!==null){
-        chains.push({startIdx:chainStart,endIdx:i-1});
-        chainStart=null;
-      }
-    }
+  // ── Warning chains ─────────────────────────────────────────────────────────
+  const realStops=computed.filter((s,i)=>i>0&&i<computed.length-1);
+  const stopHasOpen=realStops.map(s=>
+    allPois.some(p=>Math.abs(p.km-s.km)<10&&p.status.open===true&&p.type!=="drinking_water"&&p.type!=="cemetery")
+  );
+  const chains=[];let chainStart=null;
+  for(let i=0;i<realStops.length;i++){
+    if(!stopHasOpen[i]){if(chainStart===null)chainStart=i;}
+    else{if(chainStart!==null){chains.push({startIdx:chainStart,endIdx:i-1});chainStart=null;}}
   }
-  if(chainStart!==null)chains.push({startIdx:chainStart,endIdx:realStopsForChain.length-1});
+  if(chainStart!==null)chains.push({startIdx:chainStart,endIdx:realStops.length-1});
 
   let html="";
-  if(chains.length){
-    html+=chains.map(c=>{
-      const fromStop=realStopsForChain[c.startIdx];
-      const toStop=realStopsForChain[c.endIdx];
-      const count=c.endIdx-c.startIdx+1;
-      const hours=((toStop.arrival-fromStop.arrival)/3600000).toFixed(1);
-      // last sicherer Einkauf = der Pausenpunkt direkt davor, falls vorhanden
-      const beforeIdx=c.startIdx-1;
-      const lastSafe=beforeIdx>=0?realStopsForChain[beforeIdx]:computed[0];
-      return`<div style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);border-radius:8px;padding:9px 12px;margin-bottom:8px;font-size:12px;color:#f87171;font-weight:600">
-        ⚠️ Ab km ${fromStop.km} keine offene Versorgung mehr bis km ${toStop.km} (${count} Pausenpunkt${count>1?"e":""}, ~${hours} h) — letzter sicherer Einkauf: km ${lastSafe.km}
-      </div>`;
-    }).join("");
-  }
+  chains.forEach(c=>{
+    const f=realStops[c.startIdx],t=realStops[c.endIdx],cnt=c.endIdx-c.startIdx+1;
+    const hrs=((t.arrival-f.arrival)/3600000).toFixed(1);
+    const prev=c.startIdx>0?realStops[c.startIdx-1]:computed[0];
+    html+=`<div style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);border-radius:9px;padding:9px 12px;margin-bottom:8px;font-size:12px;color:#f87171;font-weight:600">
+      ⚠️ km ${f.km}–${t.km}: keine offene Versorgung (${cnt} Stopp${cnt>1?"s":""}, ~${hrs} h) — letzter Einkauf: km ${prev.km}
+    </div>`;
+  });
 
-  // Stats
-  const oc=pois.filter(p=>p.status.open===true).length,cc=pois.filter(p=>p.status.open===false).length,unk=pois.filter(p=>p.status.open===null).length;
-  html+=`<div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:12px">
-    <span style="background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.2);border-radius:7px;padding:5px 10px;font-size:11px;color:#4ade80;font-weight:700">🟢 ${oc}</span>
-    <span style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);border-radius:7px;padding:5px 10px;font-size:11px;color:#f87171;font-weight:700">🔴 ${cc}</span>
-    <span style="background:rgba(100,116,139,.1);border:1px solid var(--border);border-radius:7px;padding:5px 10px;font-size:11px;color:var(--text3);font-weight:700">❓ ${unk}</span>
-    <span style="background:rgba(100,116,139,.06);border:1px solid var(--border);border-radius:7px;padding:5px 10px;font-size:11px;color:var(--text3)">📍 ${pois.length} gesamt</span>
+  // Stats row
+  const oc=pois.filter(p=>p.status.open===true).length;
+  const cc=pois.filter(p=>p.status.open===false).length;
+  const unk=pois.filter(p=>p.status.open===null).length;
+  html+=`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
+    <span style="background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.2);border-radius:7px;padding:4px 9px;font-size:11px;color:#4ade80;font-weight:700">🟢 ${oc} offen</span>
+    <span style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);border-radius:7px;padding:4px 9px;font-size:11px;color:#f87171;font-weight:700">🔴 ${cc} zu</span>
+    <span style="background:rgba(100,116,139,.1);border:1px solid var(--border);border-radius:7px;padding:4px 9px;font-size:11px;color:var(--text3);font-weight:700">❓ ${unk}</span>
+    <span style="font-size:10px;color:var(--text3);align-self:center;margin-left:2px">${pois.length} Punkte</span>
   </div>`;
 
-  // Segment cards (30km)
-  const segs={};
-  pois.forEach(p=>{const s=Math.floor(p.km/30)*30;if(!segs[s])segs[s]=[];segs[s].push(p);});
-  Object.keys(segs).sort((a,b)=>+a-+b).forEach(sk=>{
-    const sp=segs[sk].sort((a,b)=>{
-      const as=(a.status.open===true?100:a.status.open===null?50:0)+a.priority;
-      const bs=(b.status.open===true?100:b.status.open===null?50:0)+b.priority;
-      return bs-as;
+  // ── Accordion per stop ─────────────────────────────────────────────────────
+  realStops.forEach((s,si)=>{
+    const stopPois=pois.filter(p=>Math.abs(p.km-s.km)<10).sort((a,b)=>{
+      const av=(a.status.open===true?100:a.status.open===null?50:0)+a.priority;
+      const bv=(b.status.open===true?100:b.status.open===null?50:0)+b.priority;
+      return bv-av;
     });
-    const hasOpen=sp.some(p=>p.status.open===true);
-    const hc=hasOpen?"rgba(34,197,94,.08)":"rgba(239,68,68,.06)";
-    const hb=hasOpen?"rgba(34,197,94,.2)":"rgba(239,68,68,.15)";
-    html+=`<div style="margin-bottom:8px;border:1px solid ${hb};border-radius:10px;overflow:hidden">
-      <div style="background:${hc};padding:7px 12px;display:flex;justify-content:space-between;align-items:center">
-        <span style="font-size:11px;font-weight:800;color:var(--text2)">km ${sk}–${Math.min(+sk+30,totalKm)}</span>
-        <span style="font-size:11px;color:${hasOpen?"#4ade80":"#f87171"};font-weight:700">${hasOpen?"✓ ok":"✗ kritisch"}</span>
-      </div>`;
-    sp.slice(0,3).forEach((p,pi)=>{
+    if(!stopPois.length) return;
+
+    const hasOpen=stopPois.some(p=>p.status.open===true);
+    const hasWater=stopPois.some(p=>p.type==="drinking_water"||p.type==="water_point"||p.type==="spring");
+    const hasWC=stopPois.some(p=>p.type==="toilets");
+    const statusCol=hasOpen?"#4ade80":"#f87171";
+    const statusLabel=hasOpen?"✓ offen":"✗ alles zu";
+    const isOpen=_poiAccordionOpen.has(si);
+    const dark=isDark(s.arrival);
+
+    // Quick-badge icons
+    const badges=[
+      hasOpen?"<span title='Versorgung offen' style='font-size:13px'>🛒</span>":"",
+      hasWater?"<span title='Wasser' style='font-size:13px'>💧</span>":"",
+      hasWC?"<span title='WC' style='font-size:13px'>🚻</span>":"",
+      dark?"<span title='Nacht' style='font-size:13px'>🌙</span>":"",
+    ].filter(Boolean).join("");
+
+    html+=`<div style="margin-bottom:6px;border:1px solid ${hasOpen?"rgba(34,197,94,.2)":"rgba(239,68,68,.15)"};border-radius:10px;overflow:hidden">
+      <div onclick="togglePoiAccordion(${si})" style="background:${hasOpen?"rgba(34,197,94,.06)":"rgba(239,68,68,.05)"};padding:9px 12px;display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;-webkit-user-select:none">
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+            <span style="font-size:12px;font-weight:800;color:var(--text)">${esc(s.region)}</span>
+            <span style="font-size:10px;color:var(--text3)">km ${s.km}</span>
+            ${badges}
+          </div>
+          <div style="font-size:10px;color:var(--text3);margin-top:2px">${fmt(s.arrival)} · ${stopPois.length} Punkt${stopPois.length>1?"e":""}</div>
+        </div>
+        <span style="font-size:11px;font-weight:700;color:${statusCol};flex-shrink:0">${statusLabel}</span>
+        <span style="font-size:14px;color:var(--text3);transition:transform .2s;flex-shrink:0;${isOpen?"transform:rotate(180deg)":""}" id="poi-chev-${si}">▾</span>
+      </div>
+      <div id="poi-acc-${si}" style="display:${isOpen?"block":"none"}">`;
+
+    stopPois.forEach((p,pi)=>{
       const sc=p.status.open===true?"#4ade80":p.status.open===false?"#f87171":"var(--text3)";
-      const si=p.status.open===true?"🟢":p.status.open===false?"🔴":"❓";
-      const iconColor=p.status.open===true?"#4ade80":p.status.open===false?"#f87171":"#6b85a5";
+      const si2=p.status.open===true?"🟢":p.status.open===false?"🔴":"❓";
+      const ic=p.status.open===true?"#4ade80":p.status.open===false?"#f87171":"#6b85a5";
       html+=`<div style="padding:9px 12px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px">
-        <div style="flex-shrink:0;opacity:${pi===0?1:0.7}">${poiSvg(p.type,iconColor)}</div>
+        <div style="flex-shrink:0;opacity:${pi===0?1:.75}">${poiSvg(p.type,ic)}</div>
         <div style="flex:1;min-width:0">
           <div style="font-size:13px;font-weight:700;color:${pi===0?"var(--text)":"var(--text2)"};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.name}</div>
           <div style="font-size:10px;color:var(--text3);margin-top:1px">${p.oh||"Zeiten unbekannt"}</div>
         </div>
         <div style="text-align:right;flex-shrink:0">
-          <div style="font-size:12px;font-weight:700;color:${sc}">${si} ${p.status.label}</div>
-          <div style="font-size:10px;color:var(--text3)">km ${p.km} · ${fmt(p.arrival)}</div>
+          <div style="font-size:12px;font-weight:700;color:${sc}">${si2} ${p.status.label}</div>
+          <div style="font-size:10px;color:var(--text3)">${fmt(p.arrival)}</div>
         </div>
       </div>`;
     });
-    if(sp.length>3)html+=`<div style="padding:5px 12px;border-top:1px solid var(--border);font-size:11px;color:var(--text3)">+${sp.length-3} weitere</div>`;
-    html+=`</div>`;
+    html+=`</div></div>`;
   });
-  html+=`<div style="font-size:10px;color:var(--text3);margin-top:6px">© OpenStreetMap · Öffnungszeiten aus OSM · Ankunft basierend auf deinen Parametern</div>`;
+
+  html+=`<div style="font-size:10px;color:var(--text3);margin-top:6px">© OpenStreetMap · Öffnungszeiten aus OSM</div>`;
   body.innerHTML=html;
   renderMapsSection(pois);
+}
+
+function togglePoiAccordion(si){
+  if(_poiAccordionOpen.has(si)) _poiAccordionOpen.delete(si);
+  else _poiAccordionOpen.add(si);
+  const acc=document.getElementById("poi-acc-"+si);
+  const chev=document.getElementById("poi-chev-"+si);
+  if(acc) acc.style.display=_poiAccordionOpen.has(si)?"block":"none";
+  if(chev) chev.style.transform=_poiAccordionOpen.has(si)?"rotate(180deg)":"";
+  refreshSecHeight("poi");
 }
 
 
@@ -3794,17 +3796,17 @@ out body;`;
 
       const{km:placeKm, distM:distFromRoute}=nearestKmOnRoute(el.lat,el.lon);
 
-      // Only suggest if:
+        // Only suggest if:
       // 1. Place is within 5km of route
-      // 2. Place is at least 300m away from current stop position (otherwise it IS the stop)
-      // 3. Place is ahead on route (km > s.km - 2) and within next segment
+      // 2. Place is at least 200m away from current stop position (otherwise it IS the stop)
+      // 3. Place is anywhere in the segment (before OR after current stop km)
       const nextStop=computed[origIdx+1];
-      const withinSegment=placeKm>=s.km-1&&placeKm<=(nextStop?nextStop.km:s.km+100);
+      const segEnd=nextStop?nextStop.km:s.km+200;
+      const withinSegment=placeKm>=Math.max(0,s.km-5)&&placeKm<=segEnd;
       if(distFromRoute>5000) return;
-      if(distFromStop<300) return; // already basically there
+      if(distFromStop<200) return; // already basically there
       if(!withinSegment) return;
 
-      const currentScore=PLACE_SCORE[s.region?.match(/^km\s/)?0:1]||1;
       const deltaKm=Math.round((placeKm-s.km)*10)/10;
       const distKmFromRoute=(distFromRoute/1000).toFixed(1);
 
@@ -3816,8 +3818,8 @@ out body;`;
     if(!best) return;
 
     const placeLabel={city:"Stadt",town:"Kleinstadt",village:"Dorf",hamlet:"Weiler",suburb:"Stadtteil"}[best.place]||best.place;
-    const dirStr=best.deltaKm>=0?`noch ${best.deltaKm} km weiter`:`${Math.abs(best.deltaKm)} km früher`;
-    const text=`${dirStr}: **${best.name}** (${placeLabel}, ${best.distKmFromRoute} km von Route) — bessere Versorgung möglich`;
+    const dirStr=best.deltaKm>1?`noch ${best.deltaKm} km`:best.deltaKm<-1?`${Math.abs(best.deltaKm)} km zurück`:`direkt bei km ${Math.round(best.km)}`;
+    const text=`${dirStr}: ${best.name} (${placeLabel}, ${best.distKmFromRoute} km von Route) — ggf. bessere Versorgung`;
 
     townSuggestions.push({
       stopIdx:origIdx,
